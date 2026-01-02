@@ -544,28 +544,58 @@ def parse_log(
             normalized,
         )
         role_tokens = re.findall(r"(탱|딜|힐)\s*(\d+)", normalized)
+        symbol_count = len(re.findall(r"(^|\s)[Xx]\b", normalized))
 
-        tiers: list[str] = []
         if len(rank_tokens) >= 3:
-            for prefix, number in rank_tokens[:3]:
-                tiers.append(f"{normalize_tier_prefix(prefix)}{number}")
-            return tiers
+            return [
+                f"{normalize_tier_prefix(prefix)}{number}"
+                for prefix, number in rank_tokens[:3]
+            ]
 
-        base_prefix = normalize_tier_prefix(rank_tokens[0][0]) if rank_tokens else ""
-        tank = f"{base_prefix}{rank_tokens[0][1]}" if rank_tokens else ""
-        dps = ""
-        supp = ""
-        for role, number in role_tokens:
-            value = f"{base_prefix}{number}" if base_prefix else "N/A"
-            if role == "탱":
-                tank = value
-            if role == "딜":
-                dps = value
-            if role == "힐":
-                supp = value
+        tank = "N/A"
+        dps = "N/A"
+        supp = "N/A"
 
-        tiers = [tank or "N/A", dps or "N/A", supp or "N/A"]
-        return tiers
+        if role_tokens:
+            base_prefix = normalize_tier_prefix(rank_tokens[0][0]) if rank_tokens else ""
+            for role, number in role_tokens:
+                value = f"{base_prefix}{number}" if base_prefix else f"N/A"
+                if role == "탱":
+                    tank = value
+                if role == "딜":
+                    dps = value
+                if role == "힐":
+                    supp = value
+            return [tank, dps, supp]
+
+        if symbol_count:
+            ranks = [
+                f"{normalize_tier_prefix(prefix)}{number}"
+                for prefix, number in rank_tokens
+            ]
+            if len(ranks) == 1:
+                return ["N/A", ranks[0], "N/A"]
+            if len(ranks) == 2:
+                return ["N/A", ranks[0], ranks[1]]
+
+        if len(rank_tokens) == 2:
+            ranks = [
+                f"{normalize_tier_prefix(prefix)}{number}"
+                for prefix, number in rank_tokens
+            ]
+            return [ranks[0], ranks[1], "N/A"]
+
+        if len(rank_tokens) == 1:
+            rank = f"{normalize_tier_prefix(rank_tokens[0][0])}{rank_tokens[0][1]}"
+            if "딜" in normalized:
+                return ["N/A", rank, "N/A"]
+            if "힐" in normalized:
+                return ["N/A", "N/A", rank]
+            if "탱" in normalized:
+                return [rank, "N/A", "N/A"]
+            return [rank, "N/A", "N/A"]
+
+        return [tank, dps, supp]
 
     def has_tiers(text: str) -> bool:
         return bool(
@@ -914,7 +944,7 @@ def bid(payload: BidRequest, db: Session = Depends(get_db)) -> GameStateOut:
     ).all()
     history = [log.message for log in logs]
     db.refresh(state)
-    return _state_to_out(state, history)
+    return _state_to_out(state, history) 
 
 
 @app.post("/game/admin/timer", response_model=GameStateOut)

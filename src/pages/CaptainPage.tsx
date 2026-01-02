@@ -62,6 +62,11 @@ export default function CaptainPage() {
         isMounted = false
       }
     }
+    window.history.pushState(null, '', window.location.href)
+    const blockBack = () => {
+      window.history.pushState(null, '', window.location.href)
+    }
+    window.addEventListener('popstate', blockBack)
     Promise.all([listTeams(), listPlayers(), getGameState()])
       .then(([teamData, playerData, gameState]) => {
         if (!isMounted) return
@@ -145,6 +150,7 @@ export default function CaptainPage() {
     return () => {
       isMounted = false
       socket.close()
+      window.removeEventListener('popstate', blockBack)
     }
   }, [])
 

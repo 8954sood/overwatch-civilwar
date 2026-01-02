@@ -757,6 +757,46 @@
   background: #1a1a1a;
 }
 
+.dashboard-page .status-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+}
+
+.dashboard-page .status-end {
+  background: rgba(255, 51, 102, 0.1);
+  color: var(--accent-red);
+  border: 1px solid var(--accent-red);
+}
+
+.dashboard-page .status-live {
+  background: rgba(0, 255, 163, 0.1);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.resume-btn {
+  background: none;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  justify-self: start;
+  transition: 0.2s;
+}
+
+.resume-btn:hover {
+  background: #333;
+}
+
 .start-btn {
   width: 100%;
   background: var(--primary);

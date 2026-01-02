@@ -37,6 +37,15 @@ export default function DashboardPage() {
     }
   }
 
+  const handleResume = (auction: AuctionItem) => {
+    localStorage.setItem('auctionId', auction.id)
+    if (auction.status === 'LIVE') {
+      window.location.hash = '#/streamer'
+    } else {
+      window.location.hash = '#/setup'
+    }
+  }
+
   return (
     <div className="page dashboard-page">
       <header className="header">
@@ -109,7 +118,13 @@ export default function DashboardPage() {
                   {item.status}
                 </div>
               </div>
-              <div className="col-stat">••••••</div>
+              <button
+                className="resume-btn"
+                type="button"
+                onClick={() => handleResume(item)}
+              >
+                {item.status === 'LIVE' ? 'RESUME' : 'OPEN'}
+              </button>
               <div className="col-stat">{item.id.slice(0, 6)}</div>
             </div>
           ))}

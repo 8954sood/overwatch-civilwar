@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { connectAuctionSocket } from '../api/socket'
-import { listPlayers } from '../api/auctionApi'
+import { getGameState, listPlayers } from '../api/auctionApi'
 import type { Player, Team } from '../types'
 
 type StoredTeamInfo = {
@@ -34,10 +34,23 @@ export default function WaitingPage() {
         isMounted = false
       }
     }
+    window.history.pushState(null, '', window.location.href)
+    const blockBack = () => {
+      window.history.pushState(null, '', window.location.href)
+    }
+    window.addEventListener('popstate', blockBack)
     listPlayers()
       .then((data) => {
         if (isMounted) {
           setPlayers(data)
+        }
+      })
+      .catch(() => {})
+
+    getGameState()
+      .then((gameState) => {
+        if (gameState.phase === 'AUCTION') {
+          window.location.hash = '#/captain'
         }
       })
       .catch(() => {})
@@ -70,6 +83,7 @@ export default function WaitingPage() {
     return () => {
       isMounted = false
       socket.close()
+      window.removeEventListener('popstate', blockBack)
     }
   }, [])
 

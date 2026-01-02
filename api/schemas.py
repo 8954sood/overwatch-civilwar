@@ -102,6 +102,7 @@ class JoinLobbyRequest(BaseSchema):
     team_name: str = Field(..., alias="teamName")
     captain: str
     tiers: PlayerTier
+    invite_code: str = Field(..., alias="inviteCode")
 
 
 class StartGameRequest(BaseSchema):
@@ -125,3 +126,21 @@ class AdminDecisionRequest(BaseSchema):
 
 class ParseLogRequest(BaseSchema):
     text: str
+
+
+class AdminLoginRequest(BaseSchema):
+    admin_id: str = Field(..., alias="id")
+    password: str
+
+
+class AdminLoginResponse(BaseSchema):
+    token: str
+
+
+class InviteCreateResponse(BaseSchema):
+    code: str
+    link: str
+
+
+class InviteValidateResponse(BaseSchema):
+    valid: bool

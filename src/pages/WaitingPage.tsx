@@ -1,12 +1,17 @@
-import { useMemo } from 'react'
-import { mockPlayers } from '../data/mockData'
+import { useEffect, useMemo, useState } from 'react'
+import { connectAuctionSocket } from '../api/socket'
+import { listPlayers } from '../api/auctionApi'
+import type { Player, Team } from '../types'
 
 type StoredTeamInfo = {
+  id?: string
   name: string
   points: number
 }
 
 export default function WaitingPage() {
+  const [players, setPlayers] = useState<Player[]>([])
+
   const myInfo = useMemo(() => {
     const raw = localStorage.getItem('myTeamInfo')
     if (!raw) {
@@ -16,6 +21,44 @@ export default function WaitingPage() {
       return JSON.parse(raw) as StoredTeamInfo
     } catch {
       return { name: 'GUEST', points: 1000 }
+    }
+  }, [])
+
+  const [myPoints, setMyPoints] = useState(myInfo.points)
+
+  useEffect(() => {
+    let isMounted = true
+    listPlayers()
+      .then((data) => {
+        if (isMounted) {
+          setPlayers(data)
+        }
+      })
+      .catch(() => {})
+
+    const socket = connectAuctionSocket((message) => {
+        if (message.event === 'lobby_update') {
+          const payload = message.payload as { players: Player[]; teams: Team[] }
+          setPlayers(payload.players ?? [])
+          const team = payload.teams?.find((t) => t.id === myInfo.id)
+          if (team) {
+            setMyPoints(team.points)
+            localStorage.setItem('myTeamInfo', JSON.stringify(team))
+          }
+        }
+        if (message.event === 'point_change') {
+          const payload = message.payload as { teamId: string; newPoints: number }
+          if (payload.teamId === myInfo.id) {
+            setMyPoints(payload.newPoints)
+          }
+        }
+        if (message.event === 'game_started') {
+          window.location.hash = '#/captain'
+        }
+    })
+    return () => {
+      isMounted = false
+      socket.close()
     }
   }, [])
 
@@ -36,7 +79,7 @@ export default function WaitingPage() {
             <div className="sub-label">TEAM NAME</div>
             <div className="status-name">{myInfo.name}</div>
             <div className="sub-label">STARTING POINTS</div>
-            <div className="my-point">{myInfo.points.toLocaleString()} P</div>
+            <div className="my-point">{myPoints.toLocaleString()} P</div>
           </div>
 
           <div className="panel rules-panel">
@@ -51,13 +94,13 @@ export default function WaitingPage() {
         <div className="col-list">
           <div className="list-header">AUCTION LIST</div>
           <div className="scroll-area">
-            {mockPlayers.length === 0 ? (
+            {players.length === 0 ? (
               <div className="list-empty">명단이 아직 공개되지 않았습니다.</div>
             ) : (
-              mockPlayers.map((player) => (
+              players.map((player) => (
                 <div key={player.id} className="list-item">
                   <span className="list-name">{player.name}</span>
-                  <span className="list-badges">
+                  <span className="tier-badges">
                     <span className="list-badge">
                       <img className="role-icon sm" src="/tank_role.webp" alt="Tank" />
                       {player.tiers.tank}

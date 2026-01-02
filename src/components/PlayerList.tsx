@@ -17,7 +17,7 @@ export default function PlayerList({ players, onRemove }: PlayerListProps) {
           <div key={player.id} className="list-item">
             <span className="list-name">{player.name}</span>
             <div className="list-right">
-              <span className="list-badges">
+              <span className="tier-badges">
                 <span className="list-badge">
                   <img className="role-icon sm" src="/tank_role.webp" alt="Tank" />
                   {player.tiers.tank}

@@ -73,3 +73,21 @@ class BidLog(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     message: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class AdminSession(Base):
+    __tablename__ = "admin_sessions"
+
+    token: Mapped[str] = mapped_column(String, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class InviteCode(Base):
+    __tablename__ = "invite_codes"
+
+    code: Mapped[str] = mapped_column(String, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    used_by_team_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("teams.id"), nullable=True
+    )
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

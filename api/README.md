@@ -27,6 +27,8 @@ uvicorn main:app --reload --port 8000
 ## Environment
 
 - `DATABASE_URL` (optional, default: `sqlite:///./auction.db`)
+- `ADMIN_ID` / `ADMIN_PW` (admin login)
+- `INVITE_BASE_URL` (default: `http://localhost:5173/#/join?invite=`)
 
 ## Key Endpoints
 
@@ -38,3 +40,14 @@ uvicorn main:app --reload --port 8000
 - `POST /game/admin/timer`
 - `POST /game/admin/decision`
 - `GET /game/state`
+- `WS /ws` (server events)
+
+## Auth
+
+- `POST /auth/login` with `{ "id": "...", "password": "..." }`
+- Admin-only endpoints require `Authorization: Bearer <token>`
+- `POST /invite/create` issues invite codes
+- `GET /invite/validate/{code}` validates invite code
+
+Note: invite codes are single-use. If you already created a SQLite DB before this change,
+remove `auction.db` so the new columns are created.

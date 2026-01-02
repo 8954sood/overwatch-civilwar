@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { joinLobby, validateInvite } from '../api/auctionApi'
 
 const initialTier = { tank: '', dps: '', supp: '' }
 
@@ -6,30 +7,68 @@ export default function JoinPage() {
   const [teamName, setTeamName] = useState('')
   const [captainName, setCaptainName] = useState('')
   const [tiers, setTiers] = useState(initialTier)
+  const [inviteCode, setInviteCode] = useState('')
+  const [inviteValid, setInviteValid] = useState(false)
+  const [inviteChecked, setInviteChecked] = useState(false)
 
-  const handleJoin = () => {
+  useEffect(() => {
+    const hash = window.location.hash
+    const query = hash.includes('?') ? hash.split('?')[1] : ''
+    const params = new URLSearchParams(query)
+    const fromUrl = params.get('invite')?.toUpperCase()
+    const stored = localStorage.getItem('inviteCode')?.toUpperCase()
+    const code = fromUrl || stored || ''
+    if (!code) {
+      setInviteChecked(true)
+      return
+    }
+    validateInvite(code)
+      .then((res) => {
+        if (res.valid) {
+          setInviteCode(code)
+          setInviteValid(true)
+          localStorage.setItem('inviteCode', code)
+        } else {
+          localStorage.removeItem('inviteCode')
+        }
+      })
+      .catch(() => {})
+      .finally(() => setInviteChecked(true))
+  }, [])
+
+  const handleJoin = async () => {
     if (!teamName || !captainName || !tiers.tank || !tiers.dps || !tiers.supp) {
       alert('모든 정보를 입력해 주세요.')
       return
     }
-
-    const payload = {
-      isMe: true,
-      name: teamName,
-      captainName,
-      points: 1000,
-      roster: [],
-      captainStats: tiers,
+    if (!inviteValid) {
+      alert('유효한 초대 코드가 필요합니다.')
+      return
     }
-
-    localStorage.setItem('myTeamInfo', JSON.stringify(payload))
-    window.location.hash = '#/waiting'
+    try {
+      const team = await joinLobby({
+        teamName,
+        captain: captainName,
+        tiers,
+        inviteCode,
+      })
+      localStorage.setItem('myTeamInfo', JSON.stringify(team))
+      window.location.hash = '#/waiting'
+    } catch (error) {
+      alert(String(error))
+    }
   }
 
   return (
     <div className="page centered join-page">
       <div className="join-container">
-        <div className="invite-badge">INVITE CODE: 8F2A9C</div>
+        <div className="invite-badge">
+          {inviteChecked
+            ? inviteValid
+              ? `INVITE CODE: ${inviteCode}`
+              : 'INVITE CODE: INVALID'
+            : 'INVITE CODE: CHECKING...'}
+        </div>
         <div className="panel join-panel">
           <h1>AUCTION ENTRY</h1>
           <p className="sub-text">
@@ -99,7 +138,7 @@ export default function JoinPage() {
               </div>
             </div>
           </div>
-          <button className="btn-join" onClick={handleJoin}>
+          <button className="btn-join" onClick={handleJoin} disabled={!inviteValid}>
             입장하기 (ENTER)
           </button>
         </div>

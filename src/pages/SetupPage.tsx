@@ -1,7 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import PlayerList from '../components/PlayerList'
 import TeamList from '../components/TeamList'
-import { mockPlayers, mockTeams } from '../data/mockData'
+import {
+  createPlayer,
+  deletePlayer,
+  createInvite,
+  listPlayers,
+  listTeams,
+  parseLog,
+  startGame,
+  updateTeamPoints,
+} from '../api/auctionApi'
+import { connectAuctionSocket } from '../api/socket'
 import type { Player, Team } from '../types'
 
 type ManualForm = {
@@ -17,71 +27,124 @@ export default function SetupPage() {
   const [mode, setMode] = useState<'manual' | 'auto'>('manual')
   const [manualForm, setManualForm] = useState(initialForm)
   const [logText, setLogText] = useState('')
+  const [orderType, setOrderType] = useState<'seq' | 'rand'>('seq')
   const [players, setPlayers] = useState<Player[]>([])
-  const [teams, setTeams] = useState<Team[]>(
-    mockTeams.map((team) => ({ ...team, roster: [] })),
-  )
+  const [teams, setTeams] = useState<Team[]>([])
 
-  const inviteLink = useMemo(
-    () => 'https://chzzk-auction.com/invite/8F2A9C',
-    [],
-  )
+  const [inviteLink, setInviteLink] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
 
-  const handleAddManual = () => {
+  useEffect(() => {
+    if (!localStorage.getItem('adminToken')) {
+      window.location.hash = '#/login'
+      return
+    }
+    let isMounted = true
+    Promise.all([listPlayers(), listTeams(), createInvite()])
+      .then(([playerData, teamData, invite]) => {
+        if (!isMounted) return
+        setPlayers(playerData)
+        setTeams(teamData)
+        setInviteLink(invite.link)
+        setInviteCode(invite.code)
+      })
+      .catch(() => {
+        localStorage.removeItem('adminToken')
+        window.location.hash = '#/login'
+      })
+
+    const socket = connectAuctionSocket((message) => {
+      if (message.event === 'lobby_update') {
+        const payload = message.payload as { players: Player[]; teams: Team[] }
+        setPlayers(payload.players ?? [])
+        setTeams(payload.teams ?? [])
+      }
+    })
+    return () => {
+      isMounted = false
+      socket.close()
+    }
+  }, [])
+
+  const handleAddManual = async () => {
     if (!manualForm.name) {
       return
     }
-    const newPlayer: Player = {
-      id: crypto.randomUUID(),
-      name: manualForm.name,
-      tiers: {
-        tank: manualForm.tank || 'N/A',
-        dps: manualForm.dps || 'N/A',
-        supp: manualForm.supp || 'N/A',
-      },
-      status: 'waiting',
+    try {
+      const newPlayer = await createPlayer({
+        name: manualForm.name,
+        tiers: {
+          tank: manualForm.tank || 'N/A',
+          dps: manualForm.dps || 'N/A',
+          supp: manualForm.supp || 'N/A',
+        },
+      })
+      setPlayers((prev) => {
+        if (prev.some((player) => player.id === newPlayer.id)) {
+          return prev
+        }
+        return [...prev, newPlayer]
+      })
+      setManualForm(initialForm)
+    } catch (error) {
+      alert(String(error))
     }
-    setPlayers((prev) => [...prev, newPlayer])
-    setManualForm(initialForm)
   }
 
-  const handleParseLog = () => {
+  const handleParseLog = async () => {
     if (!logText.trim()) {
-      setPlayers(mockPlayers)
       return
     }
-    const parsed = logText
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line, index) => {
-        const tokens = line.split(/[\s,\/]+/).filter(Boolean)
-        const [name, tank, dps, supp] = tokens
-        return {
-          id: `log-${index}`,
-          name: name ?? `Player ${index + 1}`,
-          tiers: {
-            tank: tank ?? 'N/A',
-            dps: dps ?? 'N/A',
-            supp: supp ?? 'N/A',
-          },
-          status: 'waiting' as const,
-        }
+    try {
+      const parsed = await parseLog(logText)
+      const created = await Promise.all(
+        parsed.map((entry) => createPlayer(entry)),
+      )
+      setPlayers((prev) => {
+        const seen = new Set(prev.map((player) => player.id))
+        const merged = [...prev]
+        created.forEach((player) => {
+          if (!seen.has(player.id)) {
+            seen.add(player.id)
+            merged.push(player)
+          }
+        })
+        return merged
       })
-    setPlayers(parsed)
+      setLogText('')
+    } catch (error) {
+      alert(String(error))
+      return
+    }
   }
 
   const handleRemovePlayer = (id: string) => {
     setPlayers((prev) => prev.filter((player) => player.id !== id))
+    deletePlayer(id).catch(() => {})
   }
 
-  const handlePointChange = (teamId: string, points: number) => {
-    setTeams((prev) =>
-      prev.map((team) => (team.id === teamId ? { ...team, points } : team)),
-    )
+  const handlePointChange = async (teamId: string, points: number) => {
+    try {
+      const updated = await updateTeamPoints(teamId, points)
+      setTeams((prev) =>
+        prev.map((team) => (team.id === teamId ? updated : team)),
+      )
+    } catch (error) {
+      alert(String(error))
+    }
   }
 
   const handleCopyInvite = async () => {
+    if (!inviteLink) {
+      try {
+        const invite = await createInvite()
+        setInviteLink(invite.link)
+        setInviteCode(invite.code)
+      } catch {
+        alert('초대 링크 발급에 실패했습니다.')
+        return
+      }
+    }
     try {
       await navigator.clipboard.writeText(inviteLink)
       alert('초대 링크가 복사되었습니다.')
@@ -187,11 +250,21 @@ export default function SetupPage() {
             <label className="field-label">진행 방식</label>
             <div className="radio-group">
               <label>
-                <input type="radio" name="order" defaultChecked />
+                <input
+                  type="radio"
+                  name="order"
+                  checked={orderType === 'seq'}
+                  onChange={() => setOrderType('seq')}
+                />
                 순차 진행
               </label>
               <label>
-                <input type="radio" name="order" />
+                <input
+                  type="radio"
+                  name="order"
+                  checked={orderType === 'rand'}
+                  onChange={() => setOrderType('rand')}
+                />
                 랜덤 진행
               </label>
             </div>
@@ -203,11 +276,28 @@ export default function SetupPage() {
                 COPY
               </button>
             </div>
+            {inviteCode ? (
+              <div className="invite-code">INVITE CODE: {inviteCode}</div>
+            ) : null}
 
             <button
               className="start-btn"
               type="button"
-              onClick={() => (window.location.hash = '#/streamer')}
+              onClick={async () => {
+                try {
+                  await startGame({
+                    playerList: players.map((player) => ({
+                      id: player.id,
+                      name: player.name,
+                      tiers: player.tiers,
+                    })),
+                    orderType,
+                  })
+                  window.location.hash = '#/streamer'
+                } catch (error) {
+                  alert(String(error))
+                }
+              }}
             >
               START AUCTION
             </button>

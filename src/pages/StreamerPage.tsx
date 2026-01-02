@@ -3,61 +3,108 @@ import AuctionStage from '../components/AuctionStage'
 import ControlPanel from '../components/ControlPanel'
 import LogBox from '../components/LogBox'
 import TeamCard from '../components/TeamCard'
-import { mockPlayers, mockTeams } from '../data/mockData'
-import type { Team } from '../types'
+import {
+  adminDecision,
+  adminTimer,
+  getGameState,
+  listPlayers,
+  listTeams,
+  updateTeamPoints,
+} from '../api/auctionApi'
+import { connectAuctionSocket } from '../api/socket'
+import type { GameState, Player, Team } from '../types'
+import useSyncedTimer from '../hooks/useSyncedTimer'
 
 export default function StreamerPage() {
-  const [teams, setTeams] = useState<Team[]>(mockTeams)
-  const [logs, setLogs] = useState<string[]>([])
-  const [timer, setTimer] = useState(15)
-  const [isRunning, setIsRunning] = useState(false)
+  const [teams, setTeams] = useState<Team[]>([])
+  const [players, setPlayers] = useState<Player[]>([])
+  const [state, setState] = useState<GameState | null>(null)
 
-  const currentPlayer = useMemo(() => mockPlayers[0], [])
-  const queue = useMemo(() => mockPlayers.slice(1), [])
+  const currentPlayer = state?.currentPlayer ?? null
+  const displayTimer = useSyncedTimer(
+    state?.timerValue ?? 0,
+    state?.isTimerRunning ?? false,
+  )
+  const queue = useMemo(
+    () => players.filter((player) => player.status === 'waiting'),
+    [players],
+  )
+  const unsold = useMemo(
+    () => players.filter((player) => player.status === 'unsold'),
+    [players],
+  )
 
   useEffect(() => {
-    if (!isRunning) {
-      return
-    }
-    const interval = window.setInterval(() => {
-      setTimer((prev) => {
-        const next = Number((prev - 0.01).toFixed(2))
-        if (next <= 0) {
-          setIsRunning(false)
-          return 0
-        }
-        return next
+    let isMounted = true
+    Promise.all([listTeams(), listPlayers(), getGameState()])
+      .then(([teamData, playerData, gameState]) => {
+        if (!isMounted) return
+        setTeams(teamData)
+        setPlayers(playerData)
+        setState(gameState)
       })
-    }, 10)
-    return () => window.clearInterval(interval)
-  }, [isRunning])
+      .catch(() => {})
 
-  const handleTimerAction = (action: 'start' | 'pause' | 'reset') => {
-    if (action === 'start') {
-      setIsRunning(true)
+    const socket = connectAuctionSocket((message) => {
+      if (message.event === 'lobby_update') {
+        const payload = message.payload as { players: Player[]; teams: Team[] }
+        setTeams(payload.teams ?? [])
+        setPlayers(payload.players ?? [])
+      }
+      if (
+        message.event === 'bid_update' ||
+        message.event === 'timer_sync' ||
+        message.event === 'round_end' ||
+        message.event === 'new_round' ||
+        message.event === 'state_sync'
+      ) {
+        getGameState().then(setState).catch(() => {})
+      }
+    })
+    const poller = window.setInterval(() => {
+      Promise.all([listTeams(), listPlayers(), getGameState()])
+        .then(([teamData, playerData, gameState]) => {
+          if (!isMounted) return
+          setTeams(teamData)
+          setPlayers(playerData)
+          setState(gameState)
+        })
+        .catch(() => {})
+    }, 1000)
+    return () => {
+      isMounted = false
+      socket.close()
+      window.clearInterval(poller)
     }
-    if (action === 'pause') {
-      setIsRunning(false)
-    }
-    if (action === 'reset') {
-      setIsRunning(false)
-      setTimer(15)
+  }, [])
+
+  const handleTimerAction = async (action: 'start' | 'pause' | 'reset') => {
+    try {
+      const nextState = await adminTimer(action)
+      setState(nextState)
+    } catch (error) {
+      alert(String(error))
     }
   }
 
-  const handleDecision = (action: 'sold' | 'pass') => {
-    const message =
-      action === 'sold'
-        ? 'ADMIN: 강제 낙찰 처리했습니다.'
-        : 'ADMIN: 강제 유찰 처리했습니다.'
-    setLogs((prev) => [message, ...prev])
-    handleTimerAction('reset')
+  const handleDecision = async (action: 'sold' | 'pass') => {
+    try {
+      const nextState = await adminDecision(action)
+      setState(nextState)
+    } catch (error) {
+      alert(String(error))
+    }
   }
 
-  const handlePointChange = (teamId: string, points: number) => {
-    setTeams((prev) =>
-      prev.map((team) => (team.id === teamId ? { ...team, points } : team)),
-    )
+  const handlePointChange = async (teamId: string, points: number) => {
+    try {
+      const updated = await updateTeamPoints(teamId, points)
+      setTeams((prev) =>
+        prev.map((team) => (team.id === teamId ? updated : team)),
+      )
+    } catch (error) {
+      alert(String(error))
+    }
   }
 
   return (
@@ -76,15 +123,22 @@ export default function StreamerPage() {
       </div>
 
       <div className="col-center">
-        <AuctionStage
-          player={currentPlayer}
-          currentBid={1200}
-          showStreamerLabel
-        />
+        {currentPlayer ? (
+          <AuctionStage
+            player={currentPlayer}
+            currentBid={state?.currentBid ?? 0}
+            showStreamerLabel
+          />
+        ) : (
+          <div className="panel auction-stage">
+            <div className="stage-label">STREAMER VIEW</div>
+            <div className="player-name">대기 중</div>
+          </div>
+        )}
         <div className="bottom-section">
-          <LogBox title="LOG" entries={logs} accent="danger" />
+          <LogBox title="LOG" entries={state?.bidHistory ?? []} accent="danger" />
           <ControlPanel
-            timerValue={timer.toFixed(2)}
+            timerValue={displayTimer.toFixed(2)}
             onTimerAction={handleTimerAction}
             onDecision={handleDecision}
           />
@@ -107,6 +161,16 @@ export default function StreamerPage() {
         </div>
         <div className="panel unsold-panel">
           <div className="header-title danger">UNSOLD</div>
+          <div className="scroll-area">
+            {unsold.map((player) => (
+              <div key={player.id} className="list-item">
+                <span>{player.name}</span>
+                <span className="list-badges">
+                  {player.tiers.tank}/{player.tiers.dps}/{player.tiers.supp}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

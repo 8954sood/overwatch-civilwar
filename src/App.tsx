@@ -35,7 +35,11 @@ function App() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  const route = useMemo(() => routes[hash] ?? routes['#/login'], [hash])
+  const baseHash = useMemo(() => hash.split('?')[0], [hash])
+  const route = useMemo(
+    () => routes[baseHash] ?? routes['#/login'],
+    [baseHash],
+  )
 
   return <div className={`app ${route.className}`}>{route.element}</div>
 }

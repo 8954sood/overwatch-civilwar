@@ -1,15 +1,22 @@
 import { useState } from 'react'
+import { adminLogin } from '../api/auctionApi'
 
 export default function LoginPage() {
   const [adminId, setAdminId] = useState('admin')
   const [password, setPassword] = useState('')
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!adminId || !password) {
       alert('아이디와 비밀번호를 입력하세요.')
       return
     }
-    window.location.hash = '#/setup'
+    try {
+      const { token } = await adminLogin(adminId, password)
+      localStorage.setItem('adminToken', token)
+      window.location.hash = '#/setup'
+    } catch (error) {
+      alert('로그인에 실패했습니다.')
+    }
   }
 
   return (

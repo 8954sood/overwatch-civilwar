@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { Team } from '../types'
 
 type TeamListProps = {
@@ -6,6 +7,20 @@ type TeamListProps = {
 }
 
 export default function TeamList({ teams, onPointChange }: TeamListProps) {
+  const [draftPoints, setDraftPoints] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    setDraftPoints((prev) => {
+      const next = { ...prev }
+      teams.forEach((team) => {
+        if (next[team.id] === undefined || next[team.id] !== team.points) {
+          next[team.id] = team.points
+        }
+      })
+      return next
+    })
+  }, [teams])
+
   return (
     <div className="half-panel">
       <div className="list-header">
@@ -26,10 +41,22 @@ export default function TeamList({ teams, onPointChange }: TeamListProps) {
                   <input
                     type="number"
                     className="point-edit"
-                    defaultValue={team.points}
-                    onBlur={(event) =>
-                      onPointChange(team.id, Number(event.currentTarget.value))
-                    }
+                    value={draftPoints[team.id] ?? team.points}
+                    onChange={(event) => {
+                      const nextValue = Number(event.currentTarget.value)
+                      setDraftPoints((prev) => ({
+                        ...prev,
+                        [team.id]: nextValue,
+                      }))
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter') return
+                      const nextValue = draftPoints[team.id]
+                      if (nextValue !== undefined && nextValue !== team.points) {
+                        onPointChange(team.id, nextValue)
+                      }
+                      event.currentTarget.blur()
+                    }}
                   />
                 ) : null}
               </div>

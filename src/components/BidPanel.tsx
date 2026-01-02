@@ -5,6 +5,8 @@ type BidPanelProps = {
   onReset: () => void
   onSubmit: () => void
   myPoints: number
+  rosterFull?: boolean
+  biddingClosed?: boolean
 }
 
 export default function BidPanel({
@@ -14,9 +16,12 @@ export default function BidPanel({
   onReset,
   onSubmit,
   myPoints,
+  rosterFull = false,
+  biddingClosed = false,
 }: BidPanelProps) {
   const total = currentBid + pendingAdd
-  const canBid = pendingAdd > 0 && total <= myPoints
+  const canBid =
+    pendingAdd > 0 && total <= myPoints && !rosterFull && !biddingClosed
 
   return (
     <div className="panel control-panel">
@@ -50,7 +55,13 @@ export default function BidPanel({
       <button className="btn-bid" onClick={onSubmit} disabled={!canBid}>
         {canBid ? `${total.toLocaleString()} 포인트로 입찰` : '금액을 추가하세요'}
       </button>
-      {!canBid && pendingAdd > 0 ? (
+      {!canBid && rosterFull ? (
+        <div className="bid-warning">팀 인원이 가득 찼습니다.</div>
+      ) : null}
+      {!canBid && biddingClosed ? (
+        <div className="bid-warning">입찰 시간이 종료되었습니다.</div>
+      ) : null}
+      {!canBid && pendingAdd > 0 && !rosterFull ? (
         <div className="bid-warning">잔여 포인트를 초과했습니다.</div>
       ) : null}
     </div>

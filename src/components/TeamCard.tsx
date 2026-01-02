@@ -54,9 +54,18 @@ export default function TeamCard({
       </div>
       {showRoster ? (
         <>
-          <RosterGrid roster={team.roster} />
+          <RosterGrid roster={team.roster} baseFilled={1} />
           <div className="roster-details">
-            {team.roster.length === 0 ? (
+            {team.captainStats ? (
+              <div className="detail-row captain-row">
+                <span>{team.captainName} (Captain)</span>
+                <span className="detail-tier">
+                  T:{team.captainStats.tank} D:{team.captainStats.dps} H:
+                  {team.captainStats.supp}
+                </span>
+              </div>
+            ) : null}
+            {team.roster.length === 0 && !team.captainStats ? (
               <div className="roster-empty">Empty</div>
             ) : (
               team.roster.map((player) => (

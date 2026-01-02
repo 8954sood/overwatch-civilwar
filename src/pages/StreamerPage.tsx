@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import AuctionStage from '../components/AuctionStage'
 import ControlPanel from '../components/ControlPanel'
 import LogBox from '../components/LogBox'
+import RosterGrid from '../components/RosterGrid'
 import TeamCard from '../components/TeamCard'
 import {
   adminDecision,
@@ -191,15 +192,42 @@ export default function StreamerPage() {
             player={currentPlayer}
             currentBid={state?.currentBid ?? 0}
             highBidder={state?.highBidder?.name}
+            
             showStreamerLabel
           />
+        ) : state?.phase === 'ENDED' ? (
+          <div className="panel auction-stage final-rosters">
+            <div className="stage-label">FINAL TEAMS</div>
+            <div className="final-roster-grid scroll-area">
+              {teams.map((team) => (
+                <div key={team.id} className="final-team-card">
+                  <div className="final-team-header">
+                    <div className="final-team-name">{team.name}</div>
+                    <div className="final-team-captain">{team.captainName}</div>
+                  </div>
+                  <RosterGrid roster={team.roster} baseFilled={1} />
+                  <div className="final-team-list">
+                    <div className="final-team-player captain">
+                      {team.captainName} (Captain)
+                    </div>
+                    {team.roster.map((player) => (
+                      <div key={player.id} className="final-team-player">
+                        {player.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
           <div className="panel auction-stage">
             <div className="stage-label">STREAMER VIEW</div>
-            <div className="player-name">대기 중</div>
+            <div className="player-name">WAITING</div>
           </div>
         )}
         <div className="bottom-section">
+
           <LogBox title="LOG" entries={state?.bidHistory ?? []} accent="danger" />
           <ControlPanel
             timerValue={displayTimer.toFixed(2)}

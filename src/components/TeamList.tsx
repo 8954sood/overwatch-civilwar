@@ -33,7 +33,15 @@ export default function TeamList({ teams, onPointChange }: TeamListProps) {
             <div className="team-row">
               <div>
                 <div className="team-name">{team.name}</div>
-                <div className="team-captain">캡틴 {team.captainName}</div>
+                <div className="team-captain">
+                  캡틴 {team.captainName}
+                  {team.captainStats ? (
+                    <span className="captain-tiers">
+                      T:{team.captainStats.tank} D:{team.captainStats.dps} H:
+                      {team.captainStats.supp}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <div className="point-container editable">
                 <span className="point-view">{team.points} P</span>

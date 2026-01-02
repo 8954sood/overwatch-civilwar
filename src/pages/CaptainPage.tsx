@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import AuctionStage from '../components/AuctionStage'
 import BidPanel from '../components/BidPanel'
 import LogBox from '../components/LogBox'
+import RosterGrid from '../components/RosterGrid'
 import TeamCard from '../components/TeamCard'
 import { bid, getGameState, listPlayers, listTeams } from '../api/auctionApi'
 import { connectAuctionSocket } from '../api/socket'
@@ -207,13 +208,41 @@ export default function CaptainPage() {
             currentBid={state?.currentBid ?? 0}
             highBidder={state?.highBidder?.name}
             timerLabel={`TIME: ${displayTimer.toFixed(2)}s`}
+            
           />
+        ) : state?.phase === 'ENDED' ? (
+          <div className="panel auction-stage final-rosters">
+            <div className="stage-label">FINAL TEAMS</div>
+            <div className="final-roster-grid scroll-area">
+              {teams.map((team) => (
+                <div key={team.id} className="final-team-card">
+                  <div className="final-team-header">
+                    <div className="final-team-name">{team.name}</div>
+                    <div className="final-team-captain">{team.captainName}</div>
+                  </div>
+                  <RosterGrid roster={team.roster} baseFilled={1} />
+                  <div className="final-team-list">
+                    <div className="final-team-player captain">
+                      {team.captainName} (Captain)
+                    </div>
+                    {team.roster.map((player) => (
+                      <div key={player.id} className="final-team-player">
+                        {player.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
           <div className="panel auction-stage">
-            <div className="player-name">대기 중</div>
+            <div className="stage-label">CAPTAIN VIEW</div>
+            <div className="player-name">WAITING</div>
           </div>
         )}
         <div className="bottom-section">
+
           <LogBox title="LOG" entries={state?.bidHistory ?? []} />
           <BidPanel
             currentBid={state?.currentBid ?? 0}

@@ -770,9 +770,9 @@
 }
 
 .dashboard-page .status-end {
-  background: rgba(255, 51, 102, 0.1);
-  color: var(--accent-red);
-  border: 1px solid var(--accent-red);
+  background: #111;
+  color: #777;
+  border: 1px solid #333;
 }
 
 .dashboard-page .status-live {
@@ -848,6 +848,12 @@
 .team-captain {
   font-size: 11px;
   color: #666;
+}
+
+.captain-tiers {
+  margin-left: 8px;
+  color: #888;
+  font-family: var(--font-num);
 }
 
 .point-container {
@@ -1037,6 +1043,66 @@
   align-items: center;
   justify-content: center;
   position: relative;
+}
+
+.auction-stage.final-rosters {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 56px 24px 24px;
+}
+
+.final-roster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  padding: 16px 20px 20px;
+}
+
+.final-team-card {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid #2b2b2b;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.final-team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.final-team-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.final-team-captain {
+  font-size: 11px;
+  color: #666;
+}
+
+.final-team-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.final-team-player {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #1a1a1a;
+  font-size: 11px;
+  color: #bbb;
+}
+
+.final-team-player.captain {
+  color: var(--primary);
+  border: 1px solid rgba(0, 255, 163, 0.4);
+  background: rgba(0, 255, 163, 0.08);
 }
 
 .stage-label {
@@ -1319,6 +1385,40 @@
 .unsold-panel {
   flex: 1;
   border-top: 2px solid var(--accent-red);
+}
+
+.team-summary {
+  flex: 1;
+}
+
+.team-summary-card {
+  padding: 12px;
+  border-bottom: 1px solid #222;
+}
+
+.team-summary-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.team-summary-sub {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.team-summary-roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.team-summary-player {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #1a1a1a;
+  font-size: 11px;
+  color: #bbb;
 }
 
 @media (max-width: 1200px) {

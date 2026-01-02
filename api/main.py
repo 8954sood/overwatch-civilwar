@@ -259,6 +259,19 @@ def _state_payload(db: Session, auction_id: str) -> dict:
     return _state_to_out(state, history).model_dump(by_alias=True)
 
 
+def _normalize_player_field(value: str | None) -> str:
+    return (value or "").strip().lower()
+
+
+def _player_key(name: str, tank: str, dps: str, supp: str) -> tuple[str, str, str, str]:
+    return (
+        _normalize_player_field(name),
+        _normalize_player_field(tank),
+        _normalize_player_field(dps),
+        _normalize_player_field(supp),
+    )
+
+
 def _lobby_payload(db: Session, auction_id: str) -> dict:
     players = db.scalars(
         select(Player)
@@ -412,6 +425,17 @@ def create_player(
     auction = db.get(Auction, auction_id)
     if not auction:
         raise HTTPException(status_code=404, detail="Auction not found")
+    incoming_key = _player_key(
+        payload.name, payload.tiers.tank, payload.tiers.dps, payload.tiers.supp
+    )
+    existing_players = db.scalars(
+        select(Player).where(Player.auction_id == auction_id)
+    ).all()
+    for existing in existing_players:
+        if incoming_key == _player_key(
+            existing.name, existing.tank_tier, existing.dps_tier, existing.supp_tier
+        ):
+            return _player_to_out(existing)
     player_id = payload.id or str(uuid.uuid4())
     player = Player(
         id=player_id,
@@ -832,7 +856,7 @@ def start_game(
     db: Session = Depends(get_db),
     authorization: str | None = Header(default=None),
     auction_id: str | None = Header(default=None, alias="X-Auction-Id"),
-) -> GameStateOut:
+) -> GameStateOut:  
     _require_admin(db, authorization)
     auction_id = _require_auction_id(auction_id)
     auction = db.get(Auction, auction_id)
@@ -845,8 +869,17 @@ def start_game(
     db.query(BidLog).filter(BidLog.auction_id == auction_id).delete()
     db.commit()
 
-    players: list[Player] = []
+    unique_entries: list[PlayerCreate] = []
+    seen = set()
     for entry in payload.player_list:
+        key = _player_key(entry.name, entry.tiers.tank, entry.tiers.dps, entry.tiers.supp)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_entries.append(entry)
+
+    players: list[Player] = []
+    for entry in unique_entries:
         player = Player(
             id=entry.id or str(uuid.uuid4()),
             auction_id=auction_id,
@@ -1029,7 +1062,7 @@ def admin_decision(
 
     next_player = db.scalars(
         select(Player)
-        .where(Player.status == "waiting")
+        .where(Player.auction_id == auction_id, Player.status == "waiting")
         .order_by(Player.order_index)
     ).first()
     if next_player:
@@ -1038,7 +1071,7 @@ def admin_decision(
     else:
         unsold_players = db.scalars(
             select(Player)
-            .where(Player.status == "unsold")
+            .where(Player.auction_id == auction_id, Player.status == "unsold")
             .order_by(Player.order_index)
         ).all()
         if unsold_players:

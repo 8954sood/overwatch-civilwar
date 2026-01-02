@@ -1068,34 +1068,50 @@ def admin_decision(
     state.timer_value = DEFAULT_TIMER
     state.is_timer_running = True
 
-    next_player = db.scalars(
-        select(Player)
-        .where(Player.auction_id == auction_id, Player.status == "waiting")
-        .order_by(Player.order_index)
-    ).first()
-    if next_player:
-        next_player.status = "bidding"
-        state.current_player_id = next_player.id
+    team_count = db.query(Team).filter(Team.auction_id == auction_id).count()
+    sold_count = (
+        db.query(Player)
+        .filter(Player.auction_id == auction_id, Player.status == "sold")
+        .count()
+    )
+    max_picks = team_count * 4
+    if team_count > 0 and sold_count >= max_picks:
+        state.current_player_id = None
+        state.phase = "ENDED"
+        state.is_timer_running = False
+        timer_stop_event.set()
+        auction = db.get(Auction, auction_id)
+        if auction:
+            auction.status = "ENDED"
     else:
-        unsold_players = db.scalars(
+        next_player = db.scalars(
             select(Player)
-            .where(Player.auction_id == auction_id, Player.status == "unsold")
+            .where(Player.auction_id == auction_id, Player.status == "waiting")
             .order_by(Player.order_index)
-        ).all()
-        if unsold_players:
-            for player_item in unsold_players:
-                player_item.status = "waiting"
-            next_unsold = unsold_players[0]
-            next_unsold.status = "bidding"
-            state.current_player_id = next_unsold.id
-            state.phase = "AUCTION"
-            _log(db, auction_id, "UNSOLD REQUEUE")
+        ).first()
+        if next_player:
+            next_player.status = "bidding"
+            state.current_player_id = next_player.id
         else:
-            state.current_player_id = None
-            state.phase = "ENDED"
-            auction = db.get(Auction, auction_id)
-            if auction:
-                auction.status = "ENDED"
+            unsold_players = db.scalars(
+                select(Player)
+                .where(Player.auction_id == auction_id, Player.status == "unsold")
+                .order_by(Player.order_index)
+            ).all()
+            if unsold_players:
+                for player_item in unsold_players:
+                    player_item.status = "waiting"
+                next_unsold = unsold_players[0]
+                next_unsold.status = "bidding"
+                state.current_player_id = next_unsold.id
+                state.phase = "AUCTION"
+                _log(db, auction_id, "UNSOLD REQUEUE")
+            else:
+                state.current_player_id = None
+                state.phase = "ENDED"
+                auction = db.get(Auction, auction_id)
+                if auction:
+                    auction.status = "ENDED"
 
     db.commit()
     _start_timer_thread()

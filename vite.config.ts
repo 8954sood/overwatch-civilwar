@@ -6,10 +6,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 9003,
-    allowedHosts: ["*"],
+    allowedHosts: ["bid.devbot.me"],
   },
   preview: {
-    allowedHosts: ["*"],
+    allowedHosts: ["bid.devbot.me"],
     port: 9003,
   }
 })

@@ -12,6 +12,7 @@ from typing import Iterable
 
 from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -70,6 +71,8 @@ except ImportError:  # Allows running "uvicorn main:app" from the api folder.
     )
     from ws import ConnectionManager
  
+load_dotenv()
+
 DEFAULT_TIMER = 20.0
 MAX_TIMER = 20.0
 BONUS_TIME_ON_BID = 2.0

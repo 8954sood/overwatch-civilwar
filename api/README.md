@@ -23,6 +23,7 @@ From the api folder:
 ```bash
 uvicorn main:app --reload --port 8000
 ```
+uvicorn main:app --port 9004
 
 ## Environment
 

@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import {
@@ -11,7 +12,7 @@ import {
 } from './pages'
 
 type RouteConfig = {
-  element: JSX.Element
+  element: ReactElement
   className: string
 }
 

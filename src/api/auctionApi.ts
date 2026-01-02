@@ -5,6 +5,7 @@ export type JoinLobbyPayload = {
   teamName: string
   captain: string
   tiers: { tank: string; dps: string; supp: string }
+  inviteCode: string
 }
 
 export type StartGamePayload = {

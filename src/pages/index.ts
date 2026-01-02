@@ -1,4 +1,5 @@
 export { default as LoginPage } from './LoginPage'
+export { default as DashboardPage } from './DashboardPage'
 export { default as JoinPage } from './JoinPage'
 export { default as WaitingPage } from './WaitingPage'
 export { default as SetupPage } from './SetupPage'

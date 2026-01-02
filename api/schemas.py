@@ -34,6 +34,7 @@ class PlayerUpdate(BaseSchema):
 
 class PlayerOut(PlayerBase):
     id: str
+    auction_id: str = Field(..., alias="auctionId")
     status: str
     sold_to_team_id: Optional[str] = Field(default=None, alias="soldToTeamId")
     sold_price: Optional[int] = Field(default=None, alias="soldPrice")
@@ -63,6 +64,7 @@ class TeamUpdate(BaseSchema):
 
 class TeamOut(TeamBase):
     id: str
+    auction_id: str = Field(..., alias="auctionId")
     roster: list[PlayerOut] = []
 
     class Config:
@@ -79,6 +81,7 @@ class TeamSlim(BaseSchema):
 
 class GameStateOut(BaseSchema):
     phase: str
+    auction_id: str = Field(..., alias="auctionId")
     current_player: Optional[PlayerOut] = Field(default=None, alias="currentPlayer")
     current_bid: int = Field(..., alias="currentBid")
     high_bidder: Optional[TeamSlim] = Field(default=None, alias="highBidder")
@@ -144,3 +147,20 @@ class InviteCreateResponse(BaseSchema):
 
 class InviteValidateResponse(BaseSchema):
     valid: bool
+    auction_id: str | None = Field(default=None, alias="auctionId")
+
+
+class AuctionCreateRequest(BaseSchema):
+    title: str
+
+
+class AuctionOut(BaseSchema):
+    id: str
+    title: str
+    status: str
+    invite_code: str = Field(..., alias="inviteCode")
+    created_at: str = Field(..., alias="createdAt")
+
+
+class AuctionCreateResponse(AuctionOut):
+    invite_link: str = Field(..., alias="inviteLink")

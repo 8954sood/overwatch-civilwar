@@ -6,13 +6,16 @@ export type PlayerTier = {
 
 export type Player = {
   id: string
+  auctionId?: string
   name: string
   tiers: PlayerTier
   status?: 'waiting' | 'bidding' | 'sold' | 'unsold'
+  orderIndex?: number
 }
 
 export type Team = {
   id: string
+  auctionId?: string
   name: string
   captainName: string
   points: number
@@ -28,6 +31,7 @@ export type TeamSlim = {
 
 export type GameState = {
   phase: 'SETUP' | 'WAITING' | 'AUCTION' | 'ENDED'
+  auctionId?: string
   currentPlayer: Player | null
   currentBid: number
   highBidder: TeamSlim | null

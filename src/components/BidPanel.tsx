@@ -7,6 +7,7 @@ type BidPanelProps = {
   myPoints: number
   rosterFull?: boolean
   biddingClosed?: boolean
+  lockedByTeam?: boolean
 }
 
 export default function BidPanel({
@@ -18,10 +19,15 @@ export default function BidPanel({
   myPoints,
   rosterFull = false,
   biddingClosed = false,
+  lockedByTeam = false,
 }: BidPanelProps) {
   const total = currentBid + pendingAdd
   const canBid =
-    pendingAdd > 0 && total <= myPoints && !rosterFull && !biddingClosed
+    pendingAdd > 0 &&
+    total <= myPoints &&
+    !rosterFull &&
+    !biddingClosed &&
+    !lockedByTeam
 
   return (
     <div className="panel control-panel">
@@ -60,6 +66,9 @@ export default function BidPanel({
       ) : null}
       {!canBid && biddingClosed ? (
         <div className="bid-warning">입찰 시간이 종료되었습니다.</div>
+      ) : null}
+      {!canBid && lockedByTeam ? (
+        <div className="bid-warning">연속 입찰은 불가능합니다.</div>
       ) : null}
       {!canBid && pendingAdd > 0 && !rosterFull ? (
         <div className="bid-warning">잔여 포인트를 초과했습니다.</div>

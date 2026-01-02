@@ -42,12 +42,41 @@ export function adminLogin(id: string, password: string) {
   return post<{ token: string }>('/auth/login', { id, password })
 }
 
-export function createInvite() {
-  return post<{ code: string; link: string }>('/invite/create')
+export function validateInvite(code: string) {
+  return get<{ valid: boolean; auctionId?: string }>(`/invite/validate/${code}`)
 }
 
-export function validateInvite(code: string) {
-  return get<{ valid: boolean }>(`/invite/validate/${code}`)
+export function createAuction(title: string) {
+  return post<{
+    id: string
+    title: string
+    status: string
+    inviteCode: string
+    inviteLink: string
+    createdAt: string
+  }>('/auctions', { title })
+}
+
+export function listAuctions() {
+  return get<
+    Array<{
+      id: string
+      title: string
+      status: string
+      inviteCode: string
+      createdAt: string
+    }>
+  >('/auctions')
+}
+
+export function getAuction(auctionId: string) {
+  return get<{
+    id: string
+    title: string
+    status: string
+    inviteCode: string
+    createdAt: string
+  }>(`/auctions/${auctionId}`)
 }
 
 export function updateTeamPoints(teamId: string, points: number) {

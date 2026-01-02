@@ -7,8 +7,10 @@ export type AuctionEvent = {
 
 export function connectAuctionSocket(
   onEvent: (event: AuctionEvent) => void,
+  auctionId?: string,
 ) {
-  const socket = new WebSocket(`${WS_BASE}/ws`)
+  const query = auctionId ? `?auctionId=${encodeURIComponent(auctionId)}` : ''
+  const socket = new WebSocket(`${WS_BASE}/ws${query}`)
 
   socket.addEventListener('message', (message) => {
     try {

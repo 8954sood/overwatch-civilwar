@@ -19,23 +19,37 @@ export default function StreamerPage() {
   const [teams, setTeams] = useState<Team[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [state, setState] = useState<GameState | null>(null)
+  const auctionId = localStorage.getItem('auctionId') ?? undefined
 
   const currentPlayer = state?.currentPlayer ?? null
   const displayTimer = useSyncedTimer(
     state?.timerValue ?? 0,
     state?.isTimerRunning ?? false,
   )
-  const queue = useMemo(
-    () => players.filter((player) => player.status === 'waiting'),
+  const orderedPlayers = useMemo(
+    () =>
+      [...players].sort(
+        (a, b) => (a.orderIndex ?? 9999) - (b.orderIndex ?? 9999),
+      ),
     [players],
   )
+  const queue = useMemo(
+    () => orderedPlayers.filter((player) => player.status === 'waiting'),
+    [orderedPlayers],
+  )
   const unsold = useMemo(
-    () => players.filter((player) => player.status === 'unsold'),
-    [players],
+    () => orderedPlayers.filter((player) => player.status === 'unsold'),
+    [orderedPlayers],
   )
 
   useEffect(() => {
     let isMounted = true
+    if (!auctionId) {
+      window.location.hash = '#/dashboard'
+      return () => {
+        isMounted = false
+      }
+    }
     Promise.all([listTeams(), listPlayers(), getGameState()])
       .then(([teamData, playerData, gameState]) => {
         if (!isMounted) return
@@ -46,35 +60,78 @@ export default function StreamerPage() {
       .catch(() => {})
 
     const socket = connectAuctionSocket((message) => {
+      const payloadAuctionId =
+        (message.payload as { auctionId?: string }).auctionId ?? null
+      if (payloadAuctionId && auctionId && payloadAuctionId !== auctionId) {
+        return
+      }
       if (message.event === 'lobby_update') {
         const payload = message.payload as { players: Player[]; teams: Team[] }
         setTeams(payload.teams ?? [])
         setPlayers(payload.players ?? [])
       }
-      if (
-        message.event === 'bid_update' ||
-        message.event === 'timer_sync' ||
-        message.event === 'round_end' ||
-        message.event === 'new_round' ||
-        message.event === 'state_sync'
-      ) {
+      if (message.event === 'timer_sync') {
+        const payload = message.payload as {
+          timeLeft: number
+          isRunning: boolean
+        }
+        setState((prev) => {
+          if (!prev) {
+            getGameState().then(setState).catch(() => {})
+            return prev
+          }
+          return {
+            ...prev,
+            timerValue: payload.timeLeft,
+            isTimerRunning: payload.isRunning,
+          }
+        })
+        return
+      }
+      if (message.event === 'bid_update') {
+        const payload = message.payload as {
+          currentBid: number
+          highBidder: string
+          highBidderName?: string
+          log?: string
+        }
+        const bidderName =
+          payload.highBidderName ??
+          teams.find((team) => team.id === payload.highBidder)?.name ??
+          payload.highBidder
+        if (bidderName === payload.highBidder) {
+          console.warn('Bidder name mapping failed', {
+            highBidder: payload.highBidder,
+            teamIds: teams.map((team) => team.id),
+          })
+        }
+        setState((prev) =>
+          prev
+            ? {
+                ...prev,
+                currentBid: payload.currentBid,
+                highBidder: payload.highBidder
+                  ? { id: payload.highBidder, name: bidderName }
+                  : prev.highBidder,
+                bidHistory: payload.log
+                  ? [payload.log, ...prev.bidHistory]
+                  : prev.bidHistory,
+              }
+            : prev,
+        )
+        return
+      }
+      if (message.event === 'state_sync') {
+        setState(message.payload as GameState)
+        return
+      }
+      if (message.event === 'round_end' || message.event === 'new_round') {
         getGameState().then(setState).catch(() => {})
       }
-    })
-    const poller = window.setInterval(() => {
-      Promise.all([listTeams(), listPlayers(), getGameState()])
-        .then(([teamData, playerData, gameState]) => {
-          if (!isMounted) return
-          setTeams(teamData)
-          setPlayers(playerData)
-          setState(gameState)
-        })
-        .catch(() => {})
-    }, 1000)
+    }, auctionId)
     return () => {
       isMounted = false
       socket.close()
-      window.clearInterval(poller)
     }
   }, [])
 
@@ -127,6 +184,7 @@ export default function StreamerPage() {
           <AuctionStage
             player={currentPlayer}
             currentBid={state?.currentBid ?? 0}
+            highBidder={state?.highBidder?.name}
             showStreamerLabel
           />
         ) : (

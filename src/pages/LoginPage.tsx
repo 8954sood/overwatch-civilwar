@@ -13,7 +13,7 @@ export default function LoginPage() {
     try {
       const { token } = await adminLogin(adminId, password)
       localStorage.setItem('adminToken', token)
-      window.location.hash = '#/setup'
+      window.location.hash = '#/dashboard'
     } catch (error) {
       alert('로그인에 실패했습니다.')
     }

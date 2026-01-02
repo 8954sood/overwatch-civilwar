@@ -10,10 +10,21 @@ except ImportError:  # Allows running from api folder.
     from db import Base
 
 
+class Auction(Base):
+    __tablename__ = "auctions"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, default="DRAFT")
+    invite_code: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Team(Base):
     __tablename__ = "teams"
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
+    auction_id: Mapped[str] = mapped_column(String, ForeignKey("auctions.id"), index=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     captain_name: Mapped[str] = mapped_column(String, nullable=False)
     points: Mapped[int] = mapped_column(Integer, default=0)
@@ -30,6 +41,7 @@ class Player(Base):
     __tablename__ = "players"
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
+    auction_id: Mapped[str] = mapped_column(String, ForeignKey("auctions.id"), index=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     tank_tier: Mapped[str] = mapped_column(String, nullable=False)
     dps_tier: Mapped[str] = mapped_column(String, nullable=False)
@@ -47,7 +59,9 @@ class Player(Base):
 class GameState(Base):
     __tablename__ = "game_state"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    auction_id: Mapped[str] = mapped_column(
+        String, ForeignKey("auctions.id"), primary_key=True
+    )
     phase: Mapped[str] = mapped_column(String, default="SETUP")
     current_player_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("players.id"), nullable=True
@@ -58,6 +72,9 @@ class GameState(Base):
     )
     timer_value: Mapped[float] = mapped_column(Float, default=15.0)
     is_timer_running: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_bid_team_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("teams.id"), nullable=True
+    )
 
     current_player: Mapped["Player | None"] = relationship(
         foreign_keys=[current_player_id], lazy="selectin"
@@ -71,6 +88,7 @@ class BidLog(Base):
     __tablename__ = "bid_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    auction_id: Mapped[str] = mapped_column(String, ForeignKey("auctions.id"), index=True)
     message: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -80,14 +98,3 @@ class AdminSession(Base):
 
     token: Mapped[str] = mapped_column(String, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-
-
-class InviteCode(Base):
-    __tablename__ = "invite_codes"
-
-    code: Mapped[str] = mapped_column(String, primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    used_by_team_id: Mapped[str | None] = mapped_column(
-        String, ForeignKey("teams.id"), nullable=True
-    )
-    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

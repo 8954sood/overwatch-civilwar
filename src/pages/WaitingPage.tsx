@@ -11,6 +11,7 @@ type StoredTeamInfo = {
 
 export default function WaitingPage() {
   const [players, setPlayers] = useState<Player[]>([])
+  const auctionId = localStorage.getItem('auctionId') ?? undefined
 
   const myInfo = useMemo(() => {
     const raw = localStorage.getItem('myTeamInfo')
@@ -28,6 +29,11 @@ export default function WaitingPage() {
 
   useEffect(() => {
     let isMounted = true
+    if (!auctionId) {
+      return () => {
+        isMounted = false
+      }
+    }
     listPlayers()
       .then((data) => {
         if (isMounted) {
@@ -37,9 +43,14 @@ export default function WaitingPage() {
       .catch(() => {})
 
     const socket = connectAuctionSocket((message) => {
-        if (message.event === 'lobby_update') {
-          const payload = message.payload as { players: Player[]; teams: Team[] }
-          setPlayers(payload.players ?? [])
+      const payloadAuctionId =
+        (message.payload as { auctionId?: string }).auctionId ?? null
+      if (payloadAuctionId && auctionId && payloadAuctionId !== auctionId) {
+        return
+      }
+      if (message.event === 'lobby_update') {
+        const payload = message.payload as { players: Player[]; teams: Team[] }
+        setPlayers(payload.players ?? [])
           const team = payload.teams?.find((t) => t.id === myInfo.id)
           if (team) {
             setMyPoints(team.points)
@@ -55,7 +66,7 @@ export default function WaitingPage() {
         if (message.event === 'game_started') {
           window.location.hash = '#/captain'
         }
-    })
+    }, auctionId)
     return () => {
       isMounted = false
       socket.close()

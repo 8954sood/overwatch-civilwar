@@ -4,7 +4,7 @@ import TeamList from '../components/TeamList'
 import {
   createPlayer,
   deletePlayer,
-  createInvite,
+  getAuction,
   listPlayers,
   listTeams,
   parseLog,
@@ -31,22 +31,29 @@ export default function SetupPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [teams, setTeams] = useState<Team[]>([])
 
-  const [inviteLink, setInviteLink] = useState('')
-  const [inviteCode, setInviteCode] = useState('')
+  const [inviteLink, setInviteLink] = useState(
+    localStorage.getItem('inviteLink') ?? '',
+  )
+  const auctionId = localStorage.getItem('auctionId')
 
   useEffect(() => {
     if (!localStorage.getItem('adminToken')) {
       window.location.hash = '#/login'
       return
     }
+    if (!auctionId) {
+      window.location.hash = '#/dashboard'
+      return
+    }
     let isMounted = true
-    Promise.all([listPlayers(), listTeams(), createInvite()])
-      .then(([playerData, teamData, invite]) => {
+    Promise.all([listPlayers(), listTeams(), getAuction(auctionId)])
+      .then(([playerData, teamData, auction]) => {
         if (!isMounted) return
         setPlayers(playerData)
         setTeams(teamData)
-        setInviteLink(invite.link)
-        setInviteCode(invite.code)
+        const link = `http://localhost:5173/#/join?invite=${auction.inviteCode}`
+        setInviteLink(link)
+        localStorage.setItem('inviteLink', link)
       })
       .catch(() => {
         localStorage.removeItem('adminToken')
@@ -54,12 +61,17 @@ export default function SetupPage() {
       })
 
     const socket = connectAuctionSocket((message) => {
+      const payloadAuctionId =
+        (message.payload as { auctionId?: string }).auctionId ?? null
+      if (payloadAuctionId && auctionId && payloadAuctionId !== auctionId) {
+        return
+      }
       if (message.event === 'lobby_update') {
         const payload = message.payload as { players: Player[]; teams: Team[] }
         setPlayers(payload.players ?? [])
         setTeams(payload.teams ?? [])
       }
-    })
+    }, auctionId)
     return () => {
       isMounted = false
       socket.close()
@@ -137,9 +149,12 @@ export default function SetupPage() {
   const handleCopyInvite = async () => {
     if (!inviteLink) {
       try {
-        const invite = await createInvite()
-        setInviteLink(invite.link)
-        setInviteCode(invite.code)
+        if (!auctionId) {
+          alert('경매 정보를 찾을 수 없습니다.')
+          return
+        }
+        const auction = await getAuction(auctionId)
+        setInviteLink(`http://localhost:5173/#/join?invite=${auction.inviteCode}`)
       } catch {
         alert('초대 링크 발급에 실패했습니다.')
         return
@@ -271,14 +286,10 @@ export default function SetupPage() {
 
             <label className="field-label">초대 링크</label>
             <div className="invite-row">
-              <input type="text" value={inviteLink} readOnly />
               <button className="btn" type="button" onClick={handleCopyInvite}>
-                COPY
+                COPY INVITE LINK
               </button>
             </div>
-            {inviteCode ? (
-              <div className="invite-code">INVITE CODE: {inviteCode}</div>
-            ) : null}
 
             <button
               className="start-btn"

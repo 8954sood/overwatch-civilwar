@@ -28,8 +28,12 @@ export default function JoinPage() {
           setInviteCode(code)
           setInviteValid(true)
           localStorage.setItem('inviteCode', code)
+          if (res.auctionId) {
+            localStorage.setItem('auctionId', res.auctionId)
+          }
         } else {
           localStorage.removeItem('inviteCode')
+          localStorage.removeItem('auctionId')
         }
       })
       .catch(() => {})
@@ -53,6 +57,9 @@ export default function JoinPage() {
         inviteCode,
       })
       localStorage.setItem('myTeamInfo', JSON.stringify(team))
+      if (team.auctionId) {
+        localStorage.setItem('auctionId', team.auctionId)
+      }
       window.location.hash = '#/waiting'
     } catch (error) {
       alert(String(error))

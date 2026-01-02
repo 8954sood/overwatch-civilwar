@@ -7,10 +7,12 @@ export const WS_BASE = API_BASE.replace(/^http/, 'ws')
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('adminToken')
+  const auctionId = localStorage.getItem('auctionId')
   const response = await fetch(`${API_BASE}${path}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(auctionId ? { 'X-Auction-Id': auctionId } : {}),
       ...(options.headers ?? {}),
     },
     ...options,

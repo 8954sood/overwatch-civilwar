@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import {
+  DashboardPage,
   CaptainPage,
   JoinPage,
   LoginPage,
@@ -16,6 +17,7 @@ type RouteConfig = {
 
 const routes: Record<string, RouteConfig> = {
   '#/login': { element: <LoginPage />, className: 'page-login' },
+  '#/dashboard': { element: <DashboardPage />, className: 'page-dashboard' },
   '#/join': { element: <JoinPage />, className: 'page-join' },
   '#/waiting': { element: <WaitingPage />, className: 'page-waiting' },
   '#/setup': { element: <SetupPage />, className: 'page-setup' },

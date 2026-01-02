@@ -429,6 +429,7 @@
   box-sizing: border-box;
   display: flex;
   justify-content: center;
+  height: 100vh;
 }
 
 .setup-page .panel {
@@ -439,7 +440,7 @@
   width: 1400px;
   display: flex;
   gap: 20px;
-  height: 100%;
+  height: calc(100vh - 80px);
 }
 
 .col-left {
@@ -447,6 +448,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-height: 0;
 }
 
 .col-right {
@@ -455,6 +457,7 @@
   flex-direction: column;
   gap: 15px;
   height: 100%;
+  min-height: 0;
 }
 
 .setup-page h2 {
@@ -818,6 +821,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 .list-right {
@@ -946,6 +950,7 @@
   border-left: 4px solid var(--primary);
   background: linear-gradient(90deg, rgba(0, 255, 163, 0.05), transparent);
   border: 1px solid var(--primary);
+  max-height: none;
 }
 
 .team-card:hover {
@@ -1002,6 +1007,10 @@
 }
 
 .team-card:hover .roster-details {
+  opacity: 1;
+}
+
+.team-card.my-team .roster-details {
   opacity: 1;
 }
 

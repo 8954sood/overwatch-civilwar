@@ -180,21 +180,24 @@ def _teams_out(teams: Iterable[Team]) -> list[dict]:
     return [_team_to_out(team).model_dump(by_alias=True) for team in teams]
 
 
-def _broadcast(event: str, payload: dict) -> None:
+def _broadcast(event: str, payload: dict, auction_id: str | None = None) -> None:
     if not manager.active_connections:
         return
     queue: asyncio.Queue | None = app.state.broadcast_queue
     loop: asyncio.AbstractEventLoop | None = app.state.loop
     if queue is None or loop is None:
         return
+    target = auction_id
+    if target is None and isinstance(payload, dict):
+        target = payload.get("auctionId")
     asyncio.run_coroutine_threadsafe(
-        queue.put({"event": event, "payload": payload}), loop
+        queue.put({"event": event, "payload": payload, "auction_id": target}), loop
     )
 
 
 def _broadcast_for_auction(auction_id: str, event: str, payload: dict) -> None:
     data = {"auctionId": auction_id, **payload}
-    _broadcast(event, data)
+    _broadcast(event, data, auction_id=auction_id)
 
 
 def _player_to_out(player: Player) -> PlayerOut:
@@ -295,7 +298,12 @@ async def on_startup() -> None:
     async def broadcast_worker() -> None:
         while True:
             message = await app.state.broadcast_queue.get()
-            await manager.broadcast(message)
+            target = message.get("auction_id")
+            payload = {"event": message["event"], "payload": message["payload"]}
+            if target:
+                await manager.broadcast_to(target, payload)
+            else:
+                await manager.broadcast(payload)
 
     app.state.loop.create_task(broadcast_worker())
 
@@ -392,9 +400,9 @@ def validate_invite(code: str, db: Session = Depends(get_db)) -> InviteValidateR
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
-    await manager.connect(websocket)
+    auction_id = websocket.query_params.get("auctionId")
+    await manager.connect(websocket, auction_id)
     try:
-        auction_id = websocket.query_params.get("auctionId")
         if auction_id:
             db = next(get_db())
             try:

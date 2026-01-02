@@ -50,6 +50,15 @@ export default function CaptainPage() {
     return teams[0]
   }, [teams])
 
+  const displayTeams = useMemo(
+    () =>
+      teams.map((team) => ({
+        ...team,
+        isMe: team.id === myTeam?.id,
+      })),
+    [teams, myTeam?.id],
+  )
+
   const rosterCount = (myTeam?.roster?.length ?? 0) + 1
   const rosterFull = rosterCount >= 5
   const biddingClosed = (state?.timerValue ?? 0) <= 0 || !state?.isTimerRunning
@@ -195,7 +204,7 @@ export default function CaptainPage() {
     <div className="page auction-page captain-page">
       <div className="col-left">
         <div className="panel scroll-area team-scroll">
-          {teams.map((team) => (
+          {displayTeams.map((team) => (
             <TeamCard key={team.id} team={team} />
           ))}
         </div>

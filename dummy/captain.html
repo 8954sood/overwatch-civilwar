@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>CHZZK Auction - Captain</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary: #00FFA3; --primary-dim: rgba(0,255,163,0.1); --bg-main: #090909; --bg-panel: #141414; --bg-ele: #252525; --text-main: #FFFFFF; --text-sub: #AAAAAA; --accent-red: #FF3366; --font-main: 'Pretendard', sans-serif; --font-num: 'Roboto Mono', monospace; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg-main); color: var(--text-main); font-family: var(--font-main); height: 100vh; overflow: hidden; display: flex; padding: 16px; gap: 16px; }
+        .panel { background-color: var(--bg-panel); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #333; }
+        .header-title { font-size: 14px; font-weight: 700; color: var(--text-sub); padding: 12px 16px; background: rgba(255,255,255,0.03); border-bottom: 1px solid #333; }
+        .scroll-area { overflow-y: auto; flex: 1; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+        /* Left */
+        .col-left { flex: 2.5; display: flex; flex-direction: column; gap: 12px; }
+        .team-card { background: var(--bg-element); border-radius: 8px; padding: 12px; border-left: 4px solid #444; transition: all 0.3s; overflow: hidden; max-height: 80px; cursor: pointer; }
+        .team-card.my-team { border-left: 4px solid var(--primary); background: linear-gradient(90deg, rgba(0,255,163,0.05), transparent); border: 1px solid var(--primary); }
+        .team-card:hover { max-height: 300px; z-index: 10; background: #222; }
+        .team-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .team-name { font-weight: 700; font-size: 16px; }
+        .team-points { font-family: var(--font-num); color: var(--primary); font-weight: 700; font-size: 16px; }
+        .roster-grid { display: flex; gap: 4px; margin-bottom: 10px; }
+        .roster-slot { width: 32px; height: 32px; background: #111; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #555; border: 1px solid #333; }
+        .roster-slot.filled { background-color: #333; color: #fff; border-color: #666; font-weight: bold; }
+        .roster-details { margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; opacity: 0; transition: opacity 0.2s 0.1s; }
+        .team-card:hover .roster-details { opacity: 1; }
+        .detail-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #ccc; }
+
+        /* Center */
+        .col-center { flex: 5; display: flex; flex-direction: column; gap: 16px; }
+        .auction-stage { flex: 1; background: radial-gradient(circle at center, #1a1a1a 0%, var(--bg-panel) 70%); border: 1px solid var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .player-name { font-size: 48px; font-weight: 900; margin-bottom: 30px; }
+        .tier-container { display: flex; gap: 20px; }
+        .tier-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; width: 140px; text-align: center; }
+        .tier-card.tank { border-top: 3px solid #4facfe; } .tier-card.dps { border-top: 3px solid #ff0844; } .tier-card.supp { border-top: 3px solid #fddb92; }
+        .tier-value { font-size: 24px; font-weight: 800; color: #fff; margin-top:10px; }
+        .bid-price { font-family: var(--font-num); font-size: 56px; color: var(--primary); margin-top: 30px; font-weight: bold; }
+
+        /* Bottom Controls */
+        .bottom-section { height: 220px; display: flex; gap: 16px; }
+        .control-panel { flex: 1.5; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #333; }
+        
+        .my-point-display { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 10px 16px; border-radius: 8px; margin-bottom: 8px; }
+        .my-point-val { color: var(--primary); font-family: var(--font-num); font-size: 20px; font-weight: bold; }
+        
+        /* New: Pending Bid Display */
+        .pending-bid-box { background: #222; text-align: center; padding: 8px; border-radius: 6px; margin-bottom: 8px; color: #aaa; font-size: 13px; border: 1px solid #444; }
+        .pending-val { color: #fff; font-weight: bold; font-family: var(--font-num); font-size: 16px; margin-left: 5px; }
+
+        .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+        .btn { background: transparent; border: 1px solid var(--primary); color: var(--primary); padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: var(--font-num); transition: 0.2s; }
+        .btn:hover { background: var(--primary-dim); }
+        .btn-bid { background: var(--primary); color: #000; width: 100%; padding: 15px; font-size: 18px; font-weight: 800; border: none; box-shadow: 0 0 15px rgba(0,255,163,0.3); cursor: pointer; }
+        .btn-bid:hover { transform: scale(1.02); }
+
+        /* Right */
+        .col-right { flex: 2.5; display: flex; flex-direction: column; gap: 16px; }
+        .list-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="col-left">
+        <div class="panel scroll-area" style="padding: 10px;" id="team-list"></div>
+    </div>
+
+    <div class="col-center">
+        <div class="panel auction-stage">
+            <div style="position: absolute; top: 20px; right: 20px; font-family: var(--font-num); color: var(--accent-red);">TIME: 15.00s</div>
+            <div class="player-name">Player_Genji</div>
+            <div class="tier-container">
+                <div class="tier-card tank"><div>🛡️ TANK</div><div class="tier-value">Dia 1</div></div>
+                <div class="tier-card dps"><div>⚔️ DPS</div><div class="tier-value">GM 5</div></div>
+                <div class="tier-card supp"><div>⚕️ SUPP</div><div class="tier-value">Plat 2</div></div>
+            </div>
+            <div class="bid-price">1,200</div>
+            <div style="margin-top:10px; color:#888;">최고 입찰자: TEAM 3</div>
+        </div>
+
+        <div class="bottom-section">
+            <div class="panel scroll-area" style="flex:1; padding:10px; font-size:13px; color:#ccc;">
+                <div class="header-title">LOG</div>
+                <div>- Connected to Server</div>
+                <div><span style="color:var(--primary); font-weight:bold;">TEAM 3</span> bid 1,200</div>
+            </div>
+
+            <div class="panel control-panel">
+                <div>
+                    <div class="my-point-display">
+                        <span>잔여 포인트</span>
+                        <span class="my-point-val">800</span>
+                    </div>
+                    
+                    <div class="pending-bid-box">
+                        입찰 예정 금액: <span class="pending-val" id="pending-amt">1,200</span>
+                        <span style="font-size:11px; color:#666"> (현재가 + <span id="add-amt">0</span>)</span>
+                    </div>
+
+                    <div class="btn-grid">
+                        <button class="btn" onclick="addBid(10)">+10</button>
+                        <button class="btn" onclick="addBid(50)">+50</button>
+                        <button class="btn" onclick="addBid(100)">+100</button>
+                        <button class="btn" style="color: #fff; border-color: #555;" onclick="resetBid()">RESET</button>
+                    </div>
+                </div>
+                <button class="btn-bid" onclick="submitBid()">입찰하기 (BID)</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-right">
+        <div class="panel" style="flex:1.5"><div class="header-title">WAITING LIST</div><div class="scroll-area" id="queue-list"></div></div>
+        <div class="panel" style="flex:1; border-top:2px solid var(--accent-red);"><div class="header-title">UNSOLD</div></div>
+    </div>
+
+    <script>
+        // Data
+        const teams = [
+            { id: 1, name: "TEAM 1", points: 350, roster: [{name:"A", t:"D", d:"G", s:"P"}] },
+            { id: 2, name: "TEAM 2 (Me)", points: 800, roster: [], isMe: true },
+            { id: 3, name: "TEAM 3", points: 1200, roster: [{name:"R", t:"G", d:"P", s:"D"}] }
+        ];
+
+        function renderTeams() {
+            const c = document.getElementById('team-list');
+            c.innerHTML = '';
+            teams.forEach(t => {
+                let slots = '';
+                for(let i=0; i<5; i++) slots += `<div class="roster-slot ${i<t.roster.length?'filled':''}">${i<t.roster.length?'P':''}</div>`;
+                const details = t.roster.map(p => `<div class="detail-row"><span>${p.name}</span><span>T:${p.t} D:${p.d} H:${p.s}</span></div>`).join('') || '<div style="color:#555;font-size:12px">Empty</div>';
+                c.innerHTML += `<div class="team-card ${t.isMe?'my-team':''}"><div class="team-header"><span class="team-name">${t.name}</span><span class="team-points">${t.points} P</span></div><div class="roster-grid">${slots}</div><div class="roster-details">${details}</div></div>`;
+            });
+        }
+        renderTeams();
+
+        // Bid Logic
+        let currentHighBid = 1200; // 현재 경매가
+        let myAddedAmount = 0; // 내가 추가하려는 금액
+
+        function addBid(amount) {
+            myAddedAmount += amount;
+            updateBidDisplay();
+        }
+
+        function resetBid() {
+            myAddedAmount = 0;
+            updateBidDisplay();
+        }
+
+        function updateBidDisplay() {
+            const total = currentHighBid + myAddedAmount;
+            document.getElementById('pending-amt').innerText = total.toLocaleString();
+            document.getElementById('add-amt').innerText = myAddedAmount;
+            
+            // 입찰 버튼 텍스트 업데이트
+            const btn = document.querySelector('.btn-bid');
+            if(myAddedAmount > 0) {
+                btn.innerText = `${total} 포인트로 입찰`;
+                btn.style.opacity = '1';
+            } else {
+                btn.innerText = "금액을 추가하세요";
+            }
+        }
+
+        function submitBid() {
+            if(myAddedAmount <= 0) return alert("최소 입찰 단위를 선택해주세요.");
+            alert(`${currentHighBid + myAddedAmount} 포인트로 입찰했습니다!`);
+            currentHighBid += myAddedAmount; // 시뮬레이션: 가격 상승
+            resetBid();
+            document.querySelector('.bid-price').innerText = currentHighBid.toLocaleString();
+        }
+
+        // Load Queue
+        const qData = JSON.parse(localStorage.getItem('auctionData') || '[]');
+        const qEl = document.getElementById('queue-list');
+        qData.forEach(p => qEl.innerHTML += `<div class="list-item"><span>${p.name}</span><span style="color:#777;font-size:12px">${p.t}/${p.d}/${p.s}</span></div>`);
+    </script>
+</body>
+</html>

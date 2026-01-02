@@ -1,0 +1,6 @@
+export { default as LoginPage } from './LoginPage'
+export { default as JoinPage } from './JoinPage'
+export { default as WaitingPage } from './WaitingPage'
+export { default as SetupPage } from './SetupPage'
+export { default as StreamerPage } from './StreamerPage'
+export { default as CaptainPage } from './CaptainPage'

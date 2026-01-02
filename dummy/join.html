@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>CHZZK Auction - Join Team</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <style>
+        :root {
+            --primary: #00FFA3;
+            --bg-main: #090909;
+            --bg-panel: #141414;
+            --border: #333;
+            --text-main: #FFFFFF;
+            --text-sub: #AAAAAA;
+            --accent-red: #FF3366;
+            --font-main: 'Pretendard', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        .container {
+            width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Invite Badge */
+        .invite-badge {
+            align-self: center;
+            background: rgba(0, 255, 163, 0.1);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        p.sub-text {
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-sub);
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        /* Form Elements */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; color: #ccc; margin-bottom: 8px; font-weight: bold; }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            background: #000;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #fff;
+            font-family: var(--font-main);
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: 0.2s;
+        }
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 255, 163, 0.1);
+        }
+
+        /* Grid for Tiers */
+        .tier-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+        .tier-input-box {
+            position: relative;
+        }
+        .tier-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: #777;
+        }
+        .tier-input-box input {
+            padding-left: 30px; /* Space for icon */
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Submit Button */
+        .btn-join {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: #000;
+            font-size: 16px;
+            font-weight: 800;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            margin-top: 10px;
+        }
+        .btn-join:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+        }
+        .btn-join:disabled {
+            background: #333;
+            color: #777;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="invite-badge">INVITE CODE: 8F2A9C</div>
+        
+        <div class="panel">
+            <h1>AUCTION ENTRY</h1>
+            <p class="sub-text">팀장으로 경매에 참여하기 위해<br>팀 정보와 본인의 티어를 입력해주세요.</p>
+
+            <div class="form-group">
+                <label>TEAM NAME (팀명)</label>
+                <input type="text" id="tName" placeholder="예: TEAM 감자">
+            </div>
+
+            <div class="form-group">
+                <label>CAPTAIN NAME (팀장 닉네임)</label>
+                <input type="text" id="uName" placeholder="인게임 닉네임">
+            </div>
+
+            <div class="form-group">
+                <label>MY TIERS (포지션별 티어)</label>
+                <div class="tier-grid">
+                    <div class="tier-input-box">
+                        <span class="tier-icon">🛡️</span>
+                        <input type="text" id="tTank" placeholder="TANK">
+                    </div>
+                    <div class="tier-input-box">
+                        <span class="tier-icon">⚔️</span>
+                        <input type="text" id="tDps" placeholder="DPS">
+                    </div>
+                    <div class="tier-input-box">
+                        <span class="tier-icon">⚕️</span>
+                        <input type="text" id="tSupp" placeholder="SUPP">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-join" onclick="joinAuction()">입장하기 (ENTER)</button>
+        </div>
+        
+        <div style="text-align:center; font-size:12px; color:#555;">
+            CHZZK OVERWATCH AUCTION SYSTEM
+        </div>
+    </div>
+
+    <script>
+        // 간단한 유효성 검사 및 데이터 저장 시뮬레이션
+        function joinAuction() {
+            const teamName = document.getElementById('tName').value;
+            const userName = document.getElementById('uName').value;
+            const t = document.getElementById('tTank').value;
+            const d = document.getElementById('tDps').value;
+            const s = document.getElementById('tSupp').value;
+
+            if(!teamName || !userName || !t || !d || !s) {
+                alert("모든 정보를 입력해주세요.");
+                return;
+            }
+
+            // [Simulation] 입력된 정보를 저장 (실제로는 서버로 전송)
+            const myData = {
+                isMe: true, // 나임을 식별
+                name: teamName,
+                captain: userName,
+                points: 1000, // 기본 포인트 (설정에 따라 다를 수 있음)
+                roster: [], // 아직 팀원 없음
+                captainStats: { name: userName, t: t, d: d, s: s } // 팀장도 로스터 정보 필요 시 사용
+            };
+            
+            // 로컬 스토리지에 'myTeamInfo'로 저장해두면 captain.html에서 읽어서 렌더링 가능
+            localStorage.setItem('myTeamInfo', JSON.stringify(myData));
+
+            // 버튼 피드백 후 이동
+            const btn = document.querySelector('.btn-join');
+            btn.innerText = "CONNECTING...";
+            setTimeout(() => {
+                window.location.href = 'captain.html';
+            }, 800);
+        }
+    </script>
+</body>
+</html>

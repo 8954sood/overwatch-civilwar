@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>CHZZK Auction - Waiting Room</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #00FFA3; --bg: #090909; --panel: #141414; --text: #FFF; --border: #333; --font-num: 'Roboto Mono'; }
+        body { background: var(--bg); color: var(--text); font-family: 'Pretendard'; display: flex; flex-direction: column; height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        
+        /* Header & Status */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 10px; }
+        .status-badge { 
+            background: rgba(255, 51, 102, 0.1); color: #FF3366; border: 1px solid #FF3366; 
+            padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; 
+            animation: pulse 2s infinite; display: flex; align-items: center; gap: 8px;
+        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Layout */
+        .content-grid { display: flex; gap: 20px; flex: 1; overflow: hidden; }
+        .col-info { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+        .col-list { flex: 1.5; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Panels */
+        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+        h2 { font-size: 16px; color: var(--primary); margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
+
+        /* My Profile */
+        .my-point { font-family: var(--font-num); font-size: 36px; font-weight: bold; color: var(--primary); }
+        .sub-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+
+        /* Player List */
+        .scroll-area { overflow-y: auto; flex: 1; padding: 10px; }
+        .list-item { display: flex; justify-content: space-between; padding: 12px; background: #1a1a1a; margin-bottom: 8px; border-radius: 6px; border: 1px solid #333; }
+        .list-name { font-weight: bold; }
+        .list-badges { font-family: var(--font-num); font-size: 12px; color: #aaa; }
+
+        /* Rules */
+        .rule-item { font-size: 13px; color: #ccc; margin-bottom: 8px; padding-left: 10px; border-left: 2px solid #444; }
+
+        /* Temp Simulation Button */
+        .sim-btn { position: absolute; bottom: 20px; right: 20px; background: #333; color: #fff; border: 1px solid #555; padding: 10px; cursor: pointer; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1 style="font-size: 20px;">AUCTION WAITING ROOM</h1>
+        <div class="status-badge"><span>●</span> WAITING FOR HOST...</div>
+    </div>
+
+    <div class="content-grid">
+        <div class="col-info">
+            <div class="panel">
+                <h2>MY STATUS</h2>
+                <div class="sub-label">TEAM NAME</div>
+                <div style="font-size:18px; font-weight:bold; margin-bottom:15px;" id="disp-tname">TEAM ???</div>
+                
+                <div class="sub-label">STARTING POINTS</div>
+                <div class="my-point" id="disp-point">1,000 P</div>
+            </div>
+
+            <div class="panel" style="flex:1">
+                <h2>AUCTION RULES</h2>
+                <div class="rule-item">1. 경매는 스트리머가 시작하면 진행됩니다.</div>
+                <div class="rule-item">2. 입찰은 10/50/100 단위로 가능합니다.</div>
+                <div class="rule-item">3. 낙찰된 선수는 취소할 수 없습니다.</div>
+                <div class="rule-item">4. 포인트가 0이 되면 입찰할 수 없습니다.</div>
+            </div>
+        </div>
+
+        <div class="col-list">
+            <div style="padding:15px; background:rgba(255,255,255,0.03); border-bottom:1px solid #333; font-weight:bold; color:#aaa;">AUCTION LIST</div>
+            <div class="scroll-area" id="list-area">
+                </div>
+        </div>
+    </div>
+
+    <button class="sim-btn" onclick="location.href='captain.html'">[Dev] Force Start Game</button>
+
+    <script>
+        // Load Data
+        const myInfo = JSON.parse(localStorage.getItem('myTeamInfo') || '{"name":"GUEST","points":1000}');
+        const players = JSON.parse(localStorage.getItem('auctionPlayers') || '[]');
+
+        document.getElementById('disp-tname').innerText = myInfo.name;
+        document.getElementById('disp-point').innerText = myInfo.points + " P";
+
+        const listEl = document.getElementById('list-area');
+        if(players.length === 0) {
+            listEl.innerHTML = '<div style="text-align:center; color:#555; margin-top:20px;">명단이 아직 공개되지 않았습니다.</div>';
+        } else {
+            players.forEach(p => {
+                listEl.innerHTML += `
+                    <div class="list-item">
+                        <span class="list-name">${p.name}</span>
+                        <span class="list-badges">🛡️${p.t} ⚔️${p.d} ⚕️${p.s}</span>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>

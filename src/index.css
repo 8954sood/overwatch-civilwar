@@ -1,0 +1,35 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
+
+:root {
+  --primary: #00ffa3;
+  --primary-dim: rgba(0, 255, 163, 0.1);
+  --bg-main: #090909;
+  --bg-panel: #141414;
+  --bg-element: #252525;
+  --border: #333;
+  --text-main: #ffffff;
+  --text-sub: #aaaaaa;
+  --accent-red: #ff3366;
+  --font-main: 'Pretendard', sans-serif;
+  --font-num: 'Roboto Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-main);
+  background: var(--bg-main);
+  color: var(--text-main);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+}

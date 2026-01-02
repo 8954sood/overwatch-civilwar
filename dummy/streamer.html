@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>CHZZK Auction - Streamer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary: #00FFA3; --bg-main: #090909; --bg-panel: #141414; --bg-ele: #252525; --text-main: #FFFFFF; --text-sub: #AAAAAA; --accent-red: #FF3366; --font-main: 'Pretendard', sans-serif; --font-num: 'Roboto Mono', monospace; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg-main); color: var(--text-main); font-family: var(--font-main); height: 100vh; overflow: hidden; display: flex; padding: 16px; gap: 16px; }
+        .panel { background-color: var(--bg-panel); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #333; position: relative; }
+        .header-title { font-size: 14px; font-weight: 700; color: var(--text-sub); padding: 12px 16px; background: rgba(255,255,255,0.03); border-bottom: 1px solid #333; }
+        .scroll-area { overflow-y: auto; flex: 1; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+        /* Left: Team List */
+        .col-left { flex: 2.5; display: flex; flex-direction: column; gap: 12px; }
+        .team-card { background: var(--bg-element); border-radius: 8px; padding: 12px; border-left: 4px solid #444; transition: all 0.3s; overflow: hidden; max-height: 80px; cursor: pointer; }
+        .team-card:hover { max-height: 300px; background: #2a2a2a; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .team-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .team-name { font-weight: 700; font-size: 16px; }
+        
+        .point-container { position: relative; width: 100px; text-align: right; }
+        .point-view { font-family: var(--font-num); color: var(--primary); font-weight: 700; font-size: 16px; }
+        .point-edit { font-family: var(--font-num); width: 100%; background: #000; border: 1px solid var(--primary); color: var(--primary); padding: 2px 5px; text-align: right; font-size: 16px; display: none; }
+        .point-container:hover .point-view { display: none; }
+        .point-container:hover .point-edit { display: block; }
+
+        .roster-grid { display: flex; gap: 4px; margin-bottom: 10px; }
+        .roster-slot { width: 32px; height: 32px; background: #111; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #555; border: 1px solid #333; }
+        .roster-slot.filled { background-color: #333; color: #fff; border-color: #666; font-weight: bold; }
+        .roster-details { margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; opacity: 0; transition: opacity 0.2s 0.1s; }
+        .team-card:hover .roster-details { opacity: 1; }
+        .detail-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #ccc; }
+
+        /* Center */
+        .col-center { flex: 5; display: flex; flex-direction: column; gap: 16px; }
+        .auction-stage { flex: 1; background: radial-gradient(circle at center, #1a1a1a 0%, var(--bg-panel) 70%); border: 1px solid var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .player-name { font-size: 48px; font-weight: 900; margin-bottom: 30px; }
+        .tier-container { display: flex; gap: 20px; }
+        .tier-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; width: 140px; text-align: center; }
+        .tier-card.tank { border-top: 3px solid #4facfe; } .tier-card.dps { border-top: 3px solid #ff0844; } .tier-card.supp { border-top: 3px solid #fddb92; }
+        .tier-value { font-size: 24px; font-weight: 800; color: #fff; margin-top: 10px;}
+        .bid-price { font-family: var(--font-num); font-size: 60px; color: var(--primary); margin-top: 30px; font-weight: bold; }
+
+        /* Controls */
+        .bottom-section { height: 220px; display: flex; gap: 16px; }
+        .admin-controls { flex: 1.5; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #333; }
+        .timer-box { text-align: center; font-family: var(--font-num); font-size: 40px; color: var(--accent-red); font-weight: bold; background: #000; border-radius: 8px; padding: 10px; }
+        
+        .timer-ctrl { display: flex; gap: 5px; margin-bottom: 15px; }
+        .btn-t { flex: 1; background: #222; color: #aaa; border: 1px solid #444; padding: 8px; font-size: 11px; cursor: pointer; border-radius: 4px; }
+        .btn-t:hover { background: #333; color: #fff; }
+
+        .btn-group { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .btn-sold { background: var(--primary); color: #000; }
+        .btn-pass { background: #333; color: #fff; border: 1px solid #555; }
+
+        /* Right */
+        .col-right { flex: 2.5; display: flex; flex-direction: column; gap: 16px; }
+        .list-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="col-left">
+        <div class="panel scroll-area" style="padding: 10px;" id="team-list"></div>
+    </div>
+
+    <div class="col-center">
+        <div class="panel auction-stage">
+            <div style="position: absolute; top:20px; left:20px; color:#555; font-weight:bold;">STREAMER VIEW</div>
+            <div class="player-name">Player_Genji</div>
+            <div class="tier-container">
+                <div class="tier-card tank"><div>🛡️ TANK</div><div class="tier-value">Dia 1</div></div>
+                <div class="tier-card dps"><div>⚔️ DPS</div><div class="tier-value">GM 5</div></div>
+                <div class="tier-card supp"><div>⚕️ SUPP</div><div class="tier-value">Plat 2</div></div>
+            </div>
+            <div class="bid-price" id="bid-display">1,200</div>
+        </div>
+
+        <div class="bottom-section">
+            <div class="panel scroll-area" style="flex:1; padding:10px; font-size:13px; color:#ccc;">
+                <div class="header-title">LOG</div>
+                <div id="sys-log"></div>
+            </div>
+            <div class="panel admin-controls">
+                <div>
+                    <div class="timer-box" id="timer">15.00</div>
+                    <div class="timer-ctrl">
+                        <button class="btn-t" onclick="timerAction('start')">▶ START / RESUME</button>
+                        <button class="btn-t" onclick="timerAction('pause')">⏸ PAUSE</button>
+                        <button class="btn-t" onclick="timerAction('reset')">↺ RESET</button>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-sold" onclick="adminAction('sold')">낙찰 (SOLD)</button>
+                    <button class="btn btn-pass" onclick="adminAction('pass')">유찰 (PASS)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-right">
+        <div class="panel" style="flex:1.5;"><div class="header-title">QUEUE LIST</div><div class="scroll-area" id="queue-list"></div></div>
+        <div class="panel" style="flex:1; border-top: 2px solid var(--accent-red);"><div class="header-title" style="color:var(--accent-red)">UNSOLD</div></div>
+    </div>
+
+    <script>
+        // Data & Rendering
+        const teams = [
+            { id: 1, name: "TEAM 1", points: 350, roster: [{name:"A", t:"D", d:"G", s:"P"}] },
+            { id: 2, name: "TEAM 2", points: 1000, roster: [] },
+            { id: 3, name: "TEAM 3", points: 800, roster: [{name:"Run", t:"G", d:"P", s:"D"}] }
+        ];
+
+        function renderTeams() {
+            const c = document.getElementById('team-list');
+            c.innerHTML = '';
+            teams.forEach(t => {
+                let slots = '';
+                for(let i=0; i<5; i++) slots += `<div class="roster-slot ${i<t.roster.length?'filled':''}">${i<t.roster.length?'P':''}</div>`;
+                const details = t.roster.map(p => `<div class="detail-row"><span>${p.name}</span><span style="font-family:monospace">T:${p.t} D:${p.d} H:${p.s}</span></div>`).join('') || '<div style="font-size:12px;text-align:center;color:#555">Empty</div>';
+                
+                c.innerHTML += `
+                    <div class="team-card">
+                        <div class="team-header">
+                            <span class="team-name">${t.name}</span>
+                            <div class="point-container">
+                                <span class="point-view">${t.points} P</span>
+                                <input type="number" class="point-edit" value="${t.points}" onblur="this.previousElementSibling.innerText = this.value + ' P'">
+                            </div>
+                        </div>
+                        <div class="roster-grid">${slots}</div>
+                        <div class="roster-details">${details}</div>
+                    </div>`;
+            });
+        }
+        renderTeams();
+
+        // Queue Setup
+        const qData = JSON.parse(localStorage.getItem('auctionData') || '[]');
+        const qEl = document.getElementById('queue-list');
+        qData.forEach(p => qEl.innerHTML += `<div class="list-item"><span>${p.name}</span><span style="color:#777;font-size:12px">${p.t}/${p.d}/${p.s}</span></div>`);
+
+        // Timer Logic
+        let timerVal = 15.00;
+        let timerInterval = null;
+        const timerEl = document.getElementById('timer');
+
+        function timerAction(act) {
+            if(act === 'start') {
+                if(timerInterval) return;
+                timerInterval = setInterval(() => {
+                    timerVal -= 0.01;
+                    if(timerVal <= 0) {
+                        timerVal = 0;
+                        clearInterval(timerInterval);
+                    }
+                    timerEl.innerText = timerVal.toFixed(2);
+                }, 10);
+            } else if(act === 'pause') {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            } else if(act === 'reset') {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                timerVal = 15.00;
+                timerEl.innerText = "15.00";
+            }
+        }
+
+        function adminAction(type) {
+            const log = document.getElementById('sys-log');
+            const msg = type === 'sold' ? "ADMIN: 강제 낙찰 처리되었습니다." : "ADMIN: 강제 유찰 처리되었습니다.";
+            log.innerHTML += `<div style="color:var(--accent-red); margin-bottom:4px;">${msg}</div>`;
+            timerAction('reset');
+            // 실제 데이터 처리 로직은 여기에 추가
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>CHZZK Auction - Setup</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #00FFA3; --bg: #090909; --panel: #141414; --border: #333; --text: #FFF; --red: #FF3366; --font-num: 'Roboto Mono'; }
+        body { background: var(--bg); color: var(--text); font-family: 'Pretendard', sans-serif; height: 100vh; margin: 0; padding: 40px; box-sizing: border-box; display: flex; justify-content: center; }
+        
+        .container { width: 1400px; display: flex; gap: 20px; height: 100%; }
+        
+        /* [LEFT COLUMN: SETTINGS] */
+        .col-left { flex: 1.2; display: flex; flex-direction: column; gap: 20px; }
+        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; }
+        h2 { font-size: 16px; margin: 0 0 15px 0; color: var(--primary); border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; justify-content: space-between; }
+
+        /* Input Styles */
+        .seg-control { display: flex; background: #222; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
+        .seg-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #888; cursor: pointer; border-radius: 6px; font-weight: bold; transition: 0.2s; }
+        .seg-btn.active { background: var(--primary); color: #000; }
+        
+        input[type="text"], textarea { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 6px; box-sizing: border-box; margin-bottom: 8px; font-family: 'Pretendard'; }
+        textarea { height: 120px; resize: none; font-size: 12px; font-family: monospace; }
+        .btn { padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; background: #333; color: #fff; }
+        .btn-add { background: var(--primary); color: #000; width: 100%; }
+        
+        .mode-area { display: none; }
+        .mode-area.active { display: block; }
+
+        /* [RIGHT COLUMN: SPLIT VIEW] */
+        .col-right { flex: 1; display: flex; flex-direction: column; gap: 15px; height: 100%; }
+        .half-panel { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .list-header { padding: 15px; background: rgba(255,255,255,0.03); border-bottom: 1px solid #333; font-weight: bold; font-size: 14px; color: #aaa; display: flex; justify-content: space-between; }
+        .scroll-area { overflow-y: auto; flex: 1; padding: 10px; }
+
+        /* List Items (Common) */
+        .list-item { display: flex; justify-content: space-between; align-items: center; background: #1f1f1f; padding: 10px 14px; border-radius: 6px; border: 1px solid transparent; margin-bottom: 6px; }
+        .list-item:hover { border-color: #444; background: #252525; }
+        
+        /* Team List Specific (Point Editing) */
+        .team-row { display: flex; justify-content: space-between; width: 100%; align-items: center; }
+        .point-container { position: relative; width: 80px; text-align: right; }
+        .point-view { font-family: var(--font-num); color: var(--primary); font-weight: bold; }
+        .point-edit { 
+            font-family: var(--font-num); width: 100%; background: #000; 
+            border: 1px solid var(--primary); color: var(--primary); 
+            padding: 2px 5px; text-align: right; display: none; 
+        }
+        /* Hover to Edit Logic */
+        .point-container:hover .point-view { display: none; }
+        .point-container:hover .point-edit { display: block; }
+
+        .start-btn { width: 100%; background: var(--primary); color: #000; font-size: 18px; font-weight: 800; padding: 16px; border-radius: 8px; cursor: pointer; border: none; margin-top: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <div class="col-left">
+            <div class="panel">
+                <h2>ADD PLAYERS</h2>
+                <div class="seg-control">
+                    <button class="seg-btn active" onclick="setMode('manual')">수동 입력</button>
+                    <button class="seg-btn" onclick="setMode('auto')">자동 파싱</button>
+                </div>
+
+                <div id="mode-manual" class="mode-area active">
+                    <input type="text" id="mName" placeholder="이름 (Name)">
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="mTank" placeholder="탱커 티어">
+                        <input type="text" id="mDps" placeholder="딜러 티어">
+                        <input type="text" id="mSupp" placeholder="힐러 티어">
+                    </div>
+                    <button class="btn btn-add" onclick="addManual()">추가 (ADD)</button>
+                </div>
+
+                <div id="mode-auto" class="mode-area">
+                    <textarea id="discordLog" placeholder="디스코드 로그 붙여넣기..."></textarea>
+                    <button class="btn btn-add" onclick="parseLog()">파싱 및 추가</button>
+                </div>
+            </div>
+
+            <div class="panel" style="flex:1">
+                <h2>GAME SETTINGS</h2>
+                <label style="color:#aaa; font-size:12px; margin-bottom:5px; display:block;">진행 방식</label>
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <label style="cursor:pointer;"><input type="radio" name="order" value="seq" checked> 순차 진행</label>
+                    <label style="cursor:pointer;"><input type="radio" name="order" value="rand"> 랜덤 진행</label>
+                </div>
+
+                <label style="color:#aaa; font-size:12px; margin-bottom:5px; display:block;">초대 링크</label>
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <input type="text" value="https://chzzk-auction.com/invite/8F2A9C" readonly style="margin:0;">
+                    <button class="btn" style="width:80px;" onclick="alert('복사되었습니다!')">COPY</button>
+                </div>
+
+                <button class="start-btn" onclick="startGame()">START AUCTION</button>
+            </div>
+        </div>
+
+        <div class="col-right">
+            
+            <div class="half-panel">
+                <div class="list-header">
+                    <span>AUCTION LIST</span>
+                    <span id="p-count">0 Players</span>
+                </div>
+                <div class="scroll-area" id="player-list-area">
+                    </div>
+            </div>
+
+            <div class="half-panel">
+                <div class="list-header">
+                    <span>CONNECTED TEAMS</span>
+                    <button style="background:none; border:none; color:#555; cursor:pointer; font-size:11px;" onclick="addMockTeam()">[Dev] Sim Join</button>
+                </div>
+                <div class="scroll-area" id="team-list-area">
+                    </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let teams = [
+            // 초기 더미 데이터 (테스트용)
+            { id: 1, name: "TEAM 1", captain: "User1", points: 1000 },
+        ];
+
+        // 1. Player Management
+        function setMode(mode) {
+            document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.mode-area').forEach(d => d.classList.remove('active'));
+            document.getElementById('mode-' + mode).classList.add('active');
+        }
+
+        function renderPlayers() {
+            const el = document.getElementById('player-list-area');
+            document.getElementById('p-count').innerText = players.length + " Players";
+            el.innerHTML = '';
+            players.forEach((p, i) => {
+                el.innerHTML += `
+                    <div class="list-item">
+                        <span style="font-weight:bold">${p.name}</span>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span style="color:#888; font-size:12px; font-family:'Roboto Mono'">🛡️${p.t} ⚔️${p.d} ⚕️${p.s}</span>
+                            <button onclick="removePlayer(${i})" style="background:none; border:none; color:#555; cursor:pointer;">✕</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function addManual() {
+            const name = document.getElementById('mName').value;
+            const t = document.getElementById('mTank').value;
+            const d = document.getElementById('mDps').value;
+            const s = document.getElementById('mSupp').value;
+            if(name) {
+                players.push({name, t, d, s});
+                renderPlayers();
+                document.getElementById('mName').value = '';
+            }
+        }
+
+        function removePlayer(idx) { players.splice(idx, 1); renderPlayers(); }
+
+        // 2. Team Management (With Point Edit)
+        function renderTeams() {
+            const el = document.getElementById('team-list-area');
+            el.innerHTML = '';
+            teams.forEach((t, i) => {
+                el.innerHTML += `
+                    <div class="list-item">
+                        <div class="team-row">
+                            <div>
+                                <div style="font-weight:bold; font-size:14px;">${t.name}</div>
+                                <div style="font-size:11px; color:#666;">👑 ${t.captain}</div>
+                            </div>
+                            <div class="point-container">
+                                <span class="point-view">${t.points} P</span>
+                                <input type="number" class="point-edit" value="${t.points}" 
+                                       onchange="updateTeamPoint(${i}, this.value)" 
+                                       onblur="renderTeams()"> </div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function updateTeamPoint(idx, val) {
+            teams[idx].points = parseInt(val);
+            // 여기서 서버 전송 로직이 들어감
+            console.log(`Team ${teams[idx].name} points updated to ${val}`);
+        }
+
+        // [Dev Tool] 팀장이 join.html로 들어왔다고 가정하고 목록에 추가
+        function addMockTeam() {
+            const id = teams.length + 1;
+            teams.push({ id: id, name: `TEAM ${id}`, captain: `Captain${id}`, points: 1000 });
+            renderTeams();
+        }
+
+        function startGame() {
+            if(players.length === 0) {
+                 // Mock Data for Play
+                 players = [{name:"Faker", t:"CH", d:"CH", s:"CH"}, {name:"Runner", t:"D2", d:"P1", s:"G4"}];
+            }
+            localStorage.setItem('auctionPlayers', JSON.stringify(players));
+            // 팀 데이터도 넘겨야 함 (실제로는 서버DB 사용)
+            localStorage.setItem('auctionTeams', JSON.stringify(teams));
+            location.href = 'streamer.html';
+        }
+
+        // Init
+        renderTeams();
+    </script>
+</body>
+</html>

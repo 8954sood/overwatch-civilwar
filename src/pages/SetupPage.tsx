@@ -31,6 +31,12 @@ export default function SetupPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [teams, setTeams] = useState<Team[]>([])
 
+  const appBaseUrl =
+    (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/+$/, '') ||
+    window.location.origin
+  const buildInviteLink = (inviteCode: string) =>
+    `${appBaseUrl}/#/join?invite=${inviteCode}`
+
   const [inviteLink, setInviteLink] = useState(
     localStorage.getItem('inviteLink') ?? '',
   )
@@ -51,7 +57,7 @@ export default function SetupPage() {
         if (!isMounted) return
         setPlayers(playerData)
         setTeams(teamData)
-        const link = `http://localhost:5173/#/join?invite=${auction.inviteCode}`
+        const link = buildInviteLink(auction.inviteCode)
         setInviteLink(link)
         localStorage.setItem('inviteLink', link)
       })
@@ -154,7 +160,9 @@ export default function SetupPage() {
           return
         }
         const auction = await getAuction(auctionId)
-        setInviteLink(`http://localhost:5173/#/join?invite=${auction.inviteCode}`)
+        const link = buildInviteLink(auction.inviteCode)
+        setInviteLink(link)
+        localStorage.setItem('inviteLink', link)
       } catch {
         alert('초대 링크 발급에 실패했습니다.')
         return

@@ -30,6 +30,7 @@ export default function SetupPage() {
   const [orderType, setOrderType] = useState<'seq' | 'rand'>('seq')
   const [players, setPlayers] = useState<Player[]>([])
   const [teams, setTeams] = useState<Team[]>([])
+  const [playerCount, setPlayerCount] = useState(5)
 
   const appBaseUrl =
     (import.meta.env.VITE_APP_URL as string | undefined)?.replace(/\/+$/, '') ||
@@ -57,6 +58,7 @@ export default function SetupPage() {
         if (!isMounted) return
         setPlayers(playerData)
         setTeams(teamData)
+        setPlayerCount(auction.playerCount ?? 5)
         const link = buildInviteLink(auction.inviteCode)
         setInviteLink(link)
         localStorage.setItem('inviteLink', link)
@@ -73,9 +75,16 @@ export default function SetupPage() {
         return
       }
       if (message.event === 'lobby_update') {
-        const payload = message.payload as { players: Player[]; teams: Team[] }
+        const payload = message.payload as {
+          players: Player[]
+          teams: Team[]
+          playerCount?: number
+        }
         setPlayers(payload.players ?? [])
         setTeams(payload.teams ?? [])
+        if (payload.playerCount) {
+          setPlayerCount(payload.playerCount)
+        }
       }
     }, auctionId)
     return () => {
@@ -292,6 +301,23 @@ export default function SetupPage() {
               </label>
             </div>
 
+            <label className="field-label">팀 인원 (1~10)</label>
+            <input
+              className="player-count-input"
+              type="number"
+              min={1}
+              max={10}
+              value={playerCount}
+              onChange={(event) => {
+                const nextValue = Number(event.target.value)
+                if (Number.isNaN(nextValue)) {
+                  setPlayerCount(5)
+                  return
+                }
+                setPlayerCount(Math.min(10, Math.max(1, nextValue)))
+              }}
+            />
+
             <label className="field-label">초대 링크</label>
             <div className="invite-row">
               <button className="btn" type="button" onClick={handleCopyInvite}>
@@ -311,6 +337,7 @@ export default function SetupPage() {
                       tiers: player.tiers,
                     })),
                     orderType,
+                    playerCount,
                   })
                   window.location.hash = '#/streamer'
                 } catch (error) {

@@ -23,6 +23,7 @@ export default function StreamerPage() {
   const auctionId = localStorage.getItem('auctionId') ?? undefined
 
   const currentPlayer = state?.currentPlayer ?? null
+  const maxRoster = state?.playerCount ?? 5
   const displayTimer = useSyncedTimer(
     state?.timerValue ?? 0,
     state?.isTimerRunning ?? false,
@@ -175,14 +176,15 @@ export default function StreamerPage() {
     <div className="page auction-page streamer-page">
       <div className="col-left">
         <div className="panel scroll-area team-scroll">
-          {teams.map((team) => (
-            <TeamCard
-              key={team.id}
-              team={team}
-              editablePoints
-              onPointChange={handlePointChange}
-            />
-          ))}
+            {teams.map((team) => (
+              <TeamCard
+                key={team.id}
+                team={team}
+                editablePoints
+                maxSlots={maxRoster}
+                onPointChange={handlePointChange}
+              />
+            ))}
         </div>
       </div>
 
@@ -205,7 +207,7 @@ export default function StreamerPage() {
                     <div className="final-team-name">{team.name}</div>
                     <div className="final-team-captain">{team.captainName}</div>
                   </div>
-                  <RosterGrid roster={team.roster} baseFilled={1} />
+                  <RosterGrid roster={team.roster} baseFilled={1} maxSlots={maxRoster} />
                   <div className="final-team-list">
                     <div className="final-team-player captain">
                       {team.captainName} (Captain)

@@ -1,5 +1,5 @@
 import { del, get, patch, post } from './client'
-import type { GameState, Player, Team } from '../types'
+import type { Auction, GameState, Player, Team } from '../types'
 
 export type JoinLobbyPayload = {
   teamName: string
@@ -11,6 +11,7 @@ export type JoinLobbyPayload = {
 export type StartGamePayload = {
   playerList: Array<{ id?: string; name: string; tiers: Player['tiers'] }>
   orderType: 'seq' | 'rand'
+  playerCount: number
 }
 
 export function listPlayers() {
@@ -48,36 +49,15 @@ export function validateInvite(code: string) {
 }
 
 export function createAuction(title: string) {
-  return post<{
-    id: string
-    title: string
-    status: string
-    inviteCode: string
-    inviteLink: string
-    createdAt: string
-  }>('/auctions', { title })
+  return post<Auction & { inviteLink: string }>('/auctions', { title })
 }
 
 export function listAuctions() {
-  return get<
-    Array<{
-      id: string
-      title: string
-      status: string
-      inviteCode: string
-      createdAt: string
-    }>
-  >('/auctions')
+  return get<Auction[]>('/auctions')
 }
 
 export function getAuction(auctionId: string) {
-  return get<{
-    id: string
-    title: string
-    status: string
-    inviteCode: string
-    createdAt: string
-  }>(`/auctions/${auctionId}`)
+  return get<Auction>(`/auctions/${auctionId}`)
 }
 
 export function updateTeamPoints(teamId: string, points: number) {

@@ -169,27 +169,27 @@ export default function CaptainPage() {
     const currentBid = state?.currentBid ?? 0
     const total = currentBid + pendingAdd
     if (!myTeam?.id) {
-      alert('팀 정보를 찾을 수 없습니다.')
+      console.warn('팀 정보를 찾을 수 없습니다.')
       return
     }
     if (biddingClosed) {
-      alert('입찰 시간이 종료되었습니다.')
+      console.warn('입찰 시간이 종료되었습니다.')
       return
     }
     if (lockedByTeam) {
-      alert('연속 입찰은 불가능합니다.')
+      console.warn('연속 입찰은 불가능합니다.')
       return
     }
     if (rosterFull) {
-      alert('팀 인원이 가득 찼습니다.')
+      console.warn('팀 인원이 가득 찼습니다.')
       return
     }
     if (pendingAdd <= 0) {
-      alert('최소 입찰 단위를 선택해 주세요.')
+      console.warn('최소 입찰 단위를 선택해 주세요.')
       return
     }
     if (total > (myTeam?.points ?? 0)) {
-      alert('잔여 포인트를 초과했습니다.')
+      console.warn('잔여 포인트를 초과했습니다.')
       return
     }
     try {
@@ -197,7 +197,7 @@ export default function CaptainPage() {
       setState(nextState)
       setPendingAdd(0)
     } catch (error) {
-      alert(String(error))
+      console.warn(String(error))
     }
   }
 

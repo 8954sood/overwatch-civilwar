@@ -74,8 +74,7 @@ except ImportError:  # Allows running "uvicorn main:app" from the api folder.
 load_dotenv(".env", override=True)
 
 DEFAULT_TIMER = 20.0
-MAX_TIMER = 20.0
-BONUS_TIME_ON_BID = 2.0
+BID_RESET_TIME = 5.0
 ADMIN_ID = os.getenv("ADMIN_ID", "admin")
 ADMIN_PW = os.getenv("ADMIN_PW", "admin")
 INVITE_BASE_URL = os.getenv("INVITE_BASE_URL", "http://localhost:5173/#/join?invite=")
@@ -984,7 +983,8 @@ def bid(payload: BidRequest, db: Session = Depends(get_db)) -> GameStateOut:
     state.current_bid = new_bid
     state.high_bidder_id = team.id
     state.last_bid_team_id = team.id
-    state.timer_value = min(MAX_TIMER, state.timer_value + BONUS_TIME_ON_BID)
+    if state.timer_value < BID_RESET_TIME:
+        state.timer_value = BID_RESET_TIME
     db.commit()
     _log(db, team.auction_id, f"{team.name} bid {new_bid}")
     _broadcast_for_auction(

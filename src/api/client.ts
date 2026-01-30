@@ -1,11 +1,4 @@
-const DEFAULT_BASE = 'http://localhost:8000'
-
-export const API_BASE =
-  import.meta.env.VITE_API_URL?.toString() ?? DEFAULT_BASE
-
-const DEFAULT_WS = API_BASE.replace(/^http/, 'ws')
-export const WS_BASE =
-  import.meta.env.VITE_WS_URL?.toString() ?? DEFAULT_WS
+import { API_BASE } from '../config/env'
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('adminToken')

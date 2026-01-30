@@ -1,4 +1,4 @@
-import { WS_BASE } from './client'
+import { WS_BASE } from '../config/env'
 
 export type AuctionEvent = {
   event: string

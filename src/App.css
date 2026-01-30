@@ -514,6 +514,22 @@
   font-family: var(--font-main);
 }
 
+.panel input[type='number'] {
+  width: 100%;
+  background: #000;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 12px;
+  border-radius: 6px;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  font-family: var(--font-main);
+}
+
+.player-count-input {
+  margin-bottom: 20px;
+}
+
 .mode-area textarea {
   height: 120px;
   resize: none;

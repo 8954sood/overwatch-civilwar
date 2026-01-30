@@ -17,6 +17,7 @@ class Auction(Base):
     title: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, default="DRAFT")
     invite_code: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    player_count: Mapped[int] = mapped_column(Integer, default=5)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

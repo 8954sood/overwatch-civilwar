@@ -79,6 +79,9 @@ BONUS_TIME_ON_BID = 2.0
 ADMIN_ID = os.getenv("ADMIN_ID", "admin")
 ADMIN_PW = os.getenv("ADMIN_PW", "admin")
 INVITE_BASE_URL = os.getenv("INVITE_BASE_URL", "http://localhost:5173/#/join?invite=")
+DEFAULT_PLAYER_COUNT = 5
+MIN_PLAYER_COUNT = 1
+MAX_PLAYER_COUNT = 10
 
 app = FastAPI(title="CHZZK Auction API", version="0.1.0")
 manager = ConnectionManager()
@@ -122,6 +125,12 @@ def _require_auction_id(auction_id: str | None) -> str:
     if not auction_id:
         raise HTTPException(status_code=400, detail="Missing auction id")
     return auction_id
+
+
+def _clamp_player_count(value: int | None) -> int:
+    if value is None:
+        return DEFAULT_PLAYER_COUNT
+    return max(MIN_PLAYER_COUNT, min(MAX_PLAYER_COUNT, int(value)))
 
 
 def _timer_loop() -> None:
@@ -236,12 +245,15 @@ def _team_to_slim(team: Team | None) -> TeamSlim | None:
     return TeamSlim(id=team.id, name=team.name)
 
 
-def _state_to_out(state: GameState, bid_history: list[str]) -> GameStateOut:
+def _state_to_out(db: Session, state: GameState, bid_history: list[str]) -> GameStateOut:
     current_player = _player_to_out(state.current_player) if state.current_player else None
     high_bidder = _team_to_slim(state.high_bidder)
+    auction = db.get(Auction, state.auction_id)
+    player_count = auction.player_count if auction else DEFAULT_PLAYER_COUNT
     return GameStateOut(
         phase=state.phase,
         auction_id=state.auction_id,
+        player_count=player_count,
         current_player=current_player,
         current_bid=state.current_bid,
         high_bidder=high_bidder,
@@ -260,7 +272,7 @@ def _state_payload(db: Session, auction_id: str) -> dict:
         .limit(50)
     ).all()
     history = [log.message for log in logs]
-    return _state_to_out(state, history).model_dump(by_alias=True)
+    return _state_to_out(db, state, history).model_dump(by_alias=True)
 
 
 def _normalize_player_field(value: str | None) -> str:
@@ -283,7 +295,13 @@ def _lobby_payload(db: Session, auction_id: str) -> dict:
         .order_by(Player.order_index.is_(None), Player.order_index)
     ).all()
     teams = db.scalars(select(Team).where(Team.auction_id == auction_id)).all()
-    return {"auctionId": auction_id, "teams": _teams_out(teams), "players": _players_out(players)}
+    auction = db.get(Auction, auction_id)
+    return {
+        "auctionId": auction_id,
+        "teams": _teams_out(teams),
+        "players": _players_out(players),
+        "playerCount": auction.player_count if auction else DEFAULT_PLAYER_COUNT,
+    }
 
 
 def _roster_count(db: Session, team_id: str) -> int:
@@ -338,6 +356,7 @@ def create_auction(
         title=payload.title,
         status="DRAFT",
         invite_code=invite_code,
+        player_count=DEFAULT_PLAYER_COUNT,
     )
     db.add(auction)
     db.commit()
@@ -348,6 +367,7 @@ def create_auction(
         title=auction.title,
         status=auction.status,
         invite_code=auction.invite_code,
+        player_count=auction.player_count,
         created_at=auction.created_at.isoformat(),
         invite_link=f"{INVITE_BASE_URL}{auction.invite_code}",
     )
@@ -366,6 +386,7 @@ def list_auctions(
             title=item.title,
             status=item.status,
             invite_code=item.invite_code,
+            player_count=item.player_count,
             created_at=item.created_at.isoformat(),
         )
         for item in auctions
@@ -387,6 +408,7 @@ def get_auction(
         title=auction.title,
         status=auction.status,
         invite_code=auction.invite_code,
+        player_count=auction.player_count,
         created_at=auction.created_at.isoformat(),
     )
 
@@ -838,7 +860,7 @@ def get_game_state(
         .limit(50)
     ).all()
     history = [log.message for log in logs]
-    return _state_to_out(state, history)
+    return _state_to_out(db, state, history)
 
 
 @app.get("/game/logs", response_model=list[BidLogOut])
@@ -873,6 +895,7 @@ def start_game(
         raise HTTPException(status_code=404, detail="Auction not found")
     if not payload.player_list:
         raise HTTPException(status_code=400, detail="Player list is empty")
+    auction.player_count = _clamp_player_count(payload.player_count)
 
     db.query(Player).filter(Player.auction_id == auction_id).delete()
     db.query(BidLog).filter(BidLog.auction_id == auction_id).delete()
@@ -934,7 +957,7 @@ def start_game(
         },
     )
     _broadcast("lobby_update", _lobby_payload(db, auction_id))
-    return _state_to_out(state, ["GAME STARTED"])
+    return _state_to_out(db, state, ["GAME STARTED"])
 
 
 @app.post("/game/bid", response_model=GameStateOut)
@@ -943,11 +966,13 @@ def bid(payload: BidRequest, db: Session = Depends(get_db)) -> GameStateOut:
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
     state = _ensure_game_state(db, team.auction_id)
+    auction = db.get(Auction, team.auction_id)
+    max_roster = auction.player_count if auction else DEFAULT_PLAYER_COUNT
     if state.timer_value <= 0 or not state.is_timer_running:
         raise HTTPException(status_code=400, detail="Bidding is closed")
     if state.last_bid_team_id == team.id:
         raise HTTPException(status_code=400, detail="Consecutive bid not allowed")
-    if _roster_count(db, team.id) >= 4:
+    if _roster_count(db, team.id) >= max_roster - 1:
         raise HTTPException(status_code=400, detail="Roster is full")
     if payload.amount <= 0:
         raise HTTPException(status_code=400, detail="Invalid bid amount")
@@ -986,7 +1011,7 @@ def bid(payload: BidRequest, db: Session = Depends(get_db)) -> GameStateOut:
     ).all()
     history = [log.message for log in logs]
     db.refresh(state)
-    return _state_to_out(state, history) 
+    return _state_to_out(db, state, history) 
 
 
 @app.post("/game/admin/timer", response_model=GameStateOut)
@@ -1026,7 +1051,7 @@ def admin_timer(
     ).all()
     history = [log.message for log in logs]
     db.refresh(state)
-    return _state_to_out(state, history)
+    return _state_to_out(db, state, history)
 
 
 @app.post("/game/admin/decision", response_model=GameStateOut)
@@ -1052,7 +1077,9 @@ def admin_decision(
         team = db.get(Team, state.high_bidder_id)
         if not team:
             raise HTTPException(status_code=404, detail="Team not found")
-        if _roster_count(db, team.id) >= 4:
+        auction = db.get(Auction, auction_id)
+        max_roster = auction.player_count if auction else DEFAULT_PLAYER_COUNT
+        if _roster_count(db, team.id) >= max_roster - 1:
             raise HTTPException(status_code=400, detail="Roster is full")
         player.status = "sold"
         player.sold_to_team_id = team.id
@@ -1075,7 +1102,9 @@ def admin_decision(
         .filter(Player.auction_id == auction_id, Player.status == "sold")
         .count()
     )
-    max_picks = team_count * 4
+    auction = db.get(Auction, auction_id)
+    max_roster = auction.player_count if auction else DEFAULT_PLAYER_COUNT
+    max_picks = team_count * max(max_roster - 1, 0)
     if team_count > 0 and sold_count >= max_picks:
         state.current_player_id = None
         state.phase = "ENDED"
@@ -1146,4 +1175,4 @@ def admin_decision(
                 },
             )
     _broadcast("lobby_update", _lobby_payload(db, auction_id))
-    return _state_to_out(state, history)
+    return _state_to_out(db, state, history)

@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react'
 import { createAuction, listAuctions } from '../api/auctionApi'
+import type { Auction } from '../types'
 
-type AuctionItem = {
-  id: string
-  title: string
-  status: string
-  inviteCode: string
-  createdAt: string
-}
+type AuctionItem = Auction
 
 export default function DashboardPage() {
   const [auctions, setAuctions] = useState<AuctionItem[]>([])

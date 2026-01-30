@@ -82,6 +82,7 @@ class TeamSlim(BaseSchema):
 class GameStateOut(BaseSchema):
     phase: str
     auction_id: str = Field(..., alias="auctionId")
+    player_count: int = Field(..., alias="playerCount")
     current_player: Optional[PlayerOut] = Field(default=None, alias="currentPlayer")
     current_bid: int = Field(..., alias="currentBid")
     high_bidder: Optional[TeamSlim] = Field(default=None, alias="highBidder")
@@ -111,6 +112,7 @@ class JoinLobbyRequest(BaseSchema):
 class StartGameRequest(BaseSchema):
     player_list: list[PlayerCreate] = Field(..., alias="playerList")
     order_type: Literal["seq", "rand"] = Field(..., alias="orderType")
+    player_count: int = Field(..., alias="playerCount", ge=1, le=10)
 
 
 class BidRequest(BaseSchema):
@@ -159,6 +161,7 @@ class AuctionOut(BaseSchema):
     title: str
     status: str
     invite_code: str = Field(..., alias="inviteCode")
+    player_count: int = Field(..., alias="playerCount")
     created_at: str = Field(..., alias="createdAt")
 
 

@@ -17,6 +17,7 @@ export default function CaptainPage() {
   const auctionId = localStorage.getItem('auctionId') ?? undefined
 
   const currentPlayer = state?.currentPlayer ?? null
+  const maxRoster = state?.playerCount ?? 5
   const displayTimer = useSyncedTimer(
     state?.timerValue ?? 0,
     state?.isTimerRunning ?? false,
@@ -60,7 +61,7 @@ export default function CaptainPage() {
   )
 
   const rosterCount = (myTeam?.roster?.length ?? 0) + 1
-  const rosterFull = rosterCount >= 5
+  const rosterFull = rosterCount >= maxRoster
   const biddingClosed = (state?.timerValue ?? 0) <= 0 || !state?.isTimerRunning
   const lockedByTeam = state?.highBidder?.id === myTeam?.id
 
@@ -204,9 +205,9 @@ export default function CaptainPage() {
     <div className="page auction-page captain-page">
       <div className="col-left">
         <div className="panel scroll-area team-scroll">
-          {displayTeams.map((team) => (
-            <TeamCard key={team.id} team={team} />
-          ))}
+            {displayTeams.map((team) => (
+              <TeamCard key={team.id} team={team} maxSlots={maxRoster} />
+            ))}
         </div>
       </div>
 
@@ -229,7 +230,7 @@ export default function CaptainPage() {
                     <div className="final-team-name">{team.name}</div>
                     <div className="final-team-captain">{team.captainName}</div>
                   </div>
-                  <RosterGrid roster={team.roster} baseFilled={1} />
+                  <RosterGrid roster={team.roster} baseFilled={1} maxSlots={maxRoster} />
                   <div className="final-team-list">
                     <div className="final-team-player captain">
                       {team.captainName} (Captain)

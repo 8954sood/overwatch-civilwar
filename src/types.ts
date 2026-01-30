@@ -32,10 +32,20 @@ export type TeamSlim = {
 export type GameState = {
   phase: 'SETUP' | 'WAITING' | 'AUCTION' | 'ENDED'
   auctionId?: string
+  playerCount?: number
   currentPlayer: Player | null
   currentBid: number
   highBidder: TeamSlim | null
   timerValue: number
   isTimerRunning: boolean
   bidHistory: string[]
+}
+
+export type Auction = {
+  id: string
+  title: string
+  status: string
+  inviteCode: string
+  playerCount: number
+  createdAt: string
 }

@@ -6,6 +6,7 @@ type TeamCardProps = {
   team: Team
   showRoster?: boolean
   editablePoints?: boolean
+  maxSlots?: number
   onPointChange?: (teamId: string, points: number) => void
 }
 
@@ -13,6 +14,7 @@ export default function TeamCard({
   team,
   showRoster = true,
   editablePoints = false,
+  maxSlots = 5,
   onPointChange,
 }: TeamCardProps) {
   const [draftPoints, setDraftPoints] = useState(team.points)
@@ -54,7 +56,7 @@ export default function TeamCard({
       </div>
       {showRoster ? (
         <>
-          <RosterGrid roster={team.roster} baseFilled={1} />
+          <RosterGrid roster={team.roster} baseFilled={1} maxSlots={maxSlots} />
           <div className="roster-details">
             {team.captainStats ? (
               <div className="detail-row captain-row">

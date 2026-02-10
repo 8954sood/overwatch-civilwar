@@ -360,9 +360,9 @@ export default function BalancePage() {
 
   return (
     <div className="page setup-page balance-page">
-      <div className="container">
-        <div className="col-left">
-          <div className="panel">
+      <div className="container balance-container">
+        <div className="balance-top">
+          <div className="panel balance-input-panel">
             <h2>
               ADD PLAYERS
               <span className="panel-sub">등록 방식 선택</span>
@@ -449,162 +449,156 @@ export default function BalancePage() {
               </div>
             )}
           </div>
-        </div>
 
-        <div className="col-right">
-          <div className="panel balance-panel">
-            <div className="balance-toolbar">
-              <div className="balance-actions">
-                <div className="balance-team-input">
-                  <input
-                    type="text"
-                    placeholder="팀 이름"
-                    value={teamName}
-                    onChange={(event) => setTeamName(event.target.value)}
-                  />
-                  <button className="btn" type="button" onClick={handleAddTeam}>
-                    TEAM 추가
+          <div
+            className="panel balance-pool-panel"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault()
+              const payload = getDragPayload(event)
+              if (payload) {
+                handleDropToPool(payload)
+              }
+            }}
+          >
+            <div className="balance-section-title">
+              대기 인원 ({poolPlayers.length})
+            </div>
+            <div className="balance-player-list">
+              {poolPlayers.map((player) => (
+                <div
+                  key={player.id}
+                  className="balance-player"
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData(
+                      'text/plain',
+                      JSON.stringify({ playerId: player.id, fromTeamId: null }),
+                    )
+                  }}
+                >
+                  <div className="balance-player-info">
+                    <span className="balance-player-name">{player.name}</span>
+                    <span className="balance-player-tiers">
+                      T:{player.tiers.tank} D:{player.tiers.dps} H:{player.tiers.supp}
+                    </span>
+                  </div>
+                  <button
+                    className="list-remove"
+                    type="button"
+                    onClick={() => handleRemovePlayer(player.id)}
+                  >
+                    ✕
                   </button>
                 </div>
-                <button
-                  className="btn auto-balance"
-                  type="button"
-                  onClick={handleAutoBalance}
-                  disabled={!canAutoBalance}
-                >
-                  자동 밸런스
+              ))}
+              {poolPlayers.length === 0 ? (
+                <div className="balance-empty">대기 중인 인원이 없습니다.</div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="panel balance-panel">
+          <div className="balance-toolbar">
+            <div className="balance-actions">
+              <div className="balance-team-input">
+                <input
+                  type="text"
+                  placeholder="팀 이름"
+                  value={teamName}
+                  onChange={(event) => setTeamName(event.target.value)}
+                />
+                <button className="btn" type="button" onClick={handleAddTeam}>
+                  TEAM 추가
                 </button>
               </div>
-              <div className="balance-note">
-                자동 밸런스는 5명 단위 인원만 가능합니다.
-              </div>
-            </div>
-
-            <div className="balance-body">
-              <div
-                className="balance-pool"
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault()
-                  const payload = getDragPayload(event)
-                  if (payload) {
-                    handleDropToPool(payload)
-                  }
-                }}
+              <button
+                className="btn auto-balance"
+                type="button"
+                onClick={handleAutoBalance}
+                disabled={!canAutoBalance}
               >
-                <div className="balance-section-title">
-                  대기 인원 ({poolPlayers.length})
-                </div>
-                <div className="balance-player-list">
-                  {poolPlayers.map((player) => (
-                    <div
-                      key={player.id}
-                      className="balance-player"
-                      draggable
-                      onDragStart={(event) => {
-                        event.dataTransfer.setData(
-                          'text/plain',
-                          JSON.stringify({ playerId: player.id, fromTeamId: null }),
-                        )
-                      }}
-                    >
-                      <div className="balance-player-info">
-                        <span className="balance-player-name">{player.name}</span>
-                        <span className="balance-player-tiers">
-                          T:{player.tiers.tank} D:{player.tiers.dps} H:{player.tiers.supp}
-                        </span>
-                      </div>
-                      <button
-                        className="list-remove"
-                        type="button"
-                        onClick={() => handleRemovePlayer(player.id)}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                  {poolPlayers.length === 0 ? (
-                    <div className="balance-empty">대기 중인 인원이 없습니다.</div>
-                  ) : null}
-                </div>
-              </div>
+                자동 밸런스
+              </button>
+            </div>
+            <div className="balance-note">
+              자동 밸런스는 5명 단위 인원만 가능합니다.
+            </div>
+          </div>
 
-              <div className="balance-teams">
-                {teams.map((team) => {
-                  const totals = calculateTeamTotals(team)
-                  const balanceScore = totals.tank + totals.dps + totals.supp
-                  return (
-                    <div
-                      key={team.id}
-                      className="balance-team-card"
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={(event) => {
-                        event.preventDefault()
-                        const payload = getDragPayload(event)
-                        if (payload) {
-                          handleDropToTeam(payload, team.id)
-                        }
-                      }}
-                    >
-                      <div className="balance-team-header">
-                        <div>
-                          <div className="balance-team-name">{team.name}</div>
-                          <div className="balance-team-count">
-                            {team.roster.length}/{TEAM_SIZE}
-                          </div>
-                        </div>
-                        <div className="balance-team-score">
-                          <span className="score-label">BAL</span>
-                          <span className="score-value">
-                            {balanceScore.toFixed(1)}
+          <div className="balance-teams-grid">
+            {teams.map((team) => {
+              const totals = calculateTeamTotals(team)
+              const balanceScore = totals.tank + totals.dps + totals.supp
+              return (
+                <div
+                  key={team.id}
+                  className="balance-team-card"
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    const payload = getDragPayload(event)
+                    if (payload) {
+                      handleDropToTeam(payload, team.id)
+                    }
+                  }}
+                >
+                  <div className="balance-team-header">
+                    <div>
+                      <div className="balance-team-name">{team.name}</div>
+                      <div className="balance-team-count">
+                        {team.roster.length}/{TEAM_SIZE}
+                      </div>
+                    </div>
+                    <div className="balance-team-score">
+                      <span className="score-label">BAL</span>
+                      <span className="score-value">{balanceScore.toFixed(1)}</span>
+                    </div>
+                  </div>
+                  <div className="balance-roster">
+                    {team.roster.map((player) => (
+                      <div
+                        key={player.id}
+                        className="balance-player team-member"
+                        draggable
+                        onDragStart={(event) => {
+                          event.dataTransfer.setData(
+                            'text/plain',
+                            JSON.stringify({
+                              playerId: player.id,
+                              fromTeamId: team.id,
+                            }),
+                          )
+                        }}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => {
+                          event.preventDefault()
+                          const payload = getDragPayload(event)
+                          if (payload) {
+                            handleDropToTeam(payload, team.id, player.id)
+                          }
+                        }}
+                      >
+                        <div className="balance-player-info">
+                          <span className="balance-player-name">{player.name}</span>
+                          <span className="balance-player-tiers">
+                            T:{player.tiers.tank} D:{player.tiers.dps} H:
+                            {player.tiers.supp}
                           </span>
                         </div>
                       </div>
-                      <div className="balance-roster">
-                        {team.roster.map((player) => (
-                          <div
-                            key={player.id}
-                            className="balance-player team-member"
-                            draggable
-                            onDragStart={(event) => {
-                              event.dataTransfer.setData(
-                                'text/plain',
-                                JSON.stringify({
-                                  playerId: player.id,
-                                  fromTeamId: team.id,
-                                }),
-                              )
-                            }}
-                            onDragOver={(event) => event.preventDefault()}
-                            onDrop={(event) => {
-                              event.preventDefault()
-                              const payload = getDragPayload(event)
-                              if (payload) {
-                                handleDropToTeam(payload, team.id, player.id)
-                              }
-                            }}
-                          >
-                            <div className="balance-player-info">
-                              <span className="balance-player-name">{player.name}</span>
-                              <span className="balance-player-tiers">
-                                T:{player.tiers.tank} D:{player.tiers.dps} H:
-                                {player.tiers.supp}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                        {team.roster.length === 0 ? (
-                          <div className="balance-empty">드래그로 배정하세요.</div>
-                        ) : null}
-                      </div>
-                    </div>
-                  )
-                })}
-                {teams.length === 0 ? (
-                  <div className="balance-empty">팀을 추가해 주세요.</div>
-                ) : null}
-              </div>
-            </div>
+                    ))}
+                    {team.roster.length === 0 ? (
+                      <div className="balance-empty">드래그로 배정하세요.</div>
+                    ) : null}
+                  </div>
+                </div>
+              )
+            })}
+            {teams.length === 0 ? (
+              <div className="balance-empty">팀을 추가해 주세요.</div>
+            ) : null}
           </div>
         </div>
       </div>

@@ -62,28 +62,34 @@ export default function DashboardPage() {
 
       <div className="container">
         <div className="section-title">DASHBOARD</div>
-        <div className="top-grid">
-          <div className="stat-card">
-            <div className="stat-label">TOTAL SEASONS</div>
-            <div className="stat-value">{auctions.length}</div>
-            <div className="stat-trend">+1 this session</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">AVG. BID PRICE</div>
-            <div className="stat-value">-</div>
-            <div className="stat-trend" style={{ color: '#888' }}>
-              Not tracked
+          <div className="top-grid">
+            <div className="stat-card">
+              <div className="stat-label">TOTAL SEASONS</div>
+              <div className="stat-value">{auctions.length}</div>
+              <div className="stat-trend">+1 this session</div>
             </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">TOTAL PLAYERS</div>
-            <div className="stat-value">-</div>
-            <div className="stat-trend">Joined History</div>
-          </div>
+            <div className="stat-card">
+              <div className="stat-label">AVG. BID PRICE</div>
+              <div className="stat-value">-</div>
+              <div className="stat-trend" style={{ color: '#888' }}>
+                Not tracked
+              </div>
+            </div>
+            <button
+              className="action-card"
+              type="button"
+              onClick={() => {
+                window.location.hash = '#/balance'
+              }}
+            >
+              <div className="action-icon">⚖</div>
+              <div className="action-text">BALANCE</div>
+              <div className="action-sub">내전 밸런스 작성</div>
+            </button>
 
-          <button className="action-card" type="button" onClick={handleCreateAuction}>
-            <div className="action-icon">+</div>
-            <div className="action-text">NEW AUCTION</div>
+            <button className="action-card" type="button" onClick={handleCreateAuction}>
+              <div className="action-icon">+</div>
+              <div className="action-text">NEW AUCTION</div>
             <div className="action-sub">새로운 경매 세션 생성</div>
           </button>
         </div>

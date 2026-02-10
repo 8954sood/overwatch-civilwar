@@ -300,7 +300,7 @@ export default function BalancePage() {
       if (targetTeamIndex === -1) {
         return prev
       }
-      if (sourceTeamIndex === targetTeamIndex) {
+      if (sourceTeamIndex === targetTeamIndex && !targetPlayerId) {
         return prev
       }
       const removeFromSource = () => {

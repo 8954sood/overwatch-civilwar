@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import {
+  BalancePage,
   DashboardPage,
   CaptainPage,
   JoinPage,
@@ -19,6 +20,7 @@ type RouteConfig = {
 const routes: Record<string, RouteConfig> = {
   '#/login': { element: <LoginPage />, className: 'page-login' },
   '#/dashboard': { element: <DashboardPage />, className: 'page-dashboard' },
+  '#/balance': { element: <BalancePage />, className: 'page-balance' },
   '#/join': { element: <JoinPage />, className: 'page-join' },
   '#/waiting': { element: <WaitingPage />, className: 'page-waiting' },
   '#/setup': { element: <SetupPage />, className: 'page-setup' },
